@@ -21,8 +21,8 @@ CamPlayer::VideoData CamPlayer::video1 = {};
 CamPlayer::VideoData CamPlayer::video2 = {};
 CamPlayer::VideoData CamPlayer::video3 = {};
 CamPlayer::VideoData CamPlayer::video4 = {};
-CamPlayer::FriendlyColorData CamPlayer::_fcs[_fcs_length];
-CamPlayer::FriendlyColorData CamPlayer::_unfcs[_fcs_length];
+CamPlayer::FriendlyColorData CamPlayer::_fcs[_fcs_length]; //NOLINT
+CamPlayer::FriendlyColorData CamPlayer::_unfcs[_fcs_length]; //NOLINT
 bool CamPlayer::isInited=false;
 
 CamPlayer::TrackingData CamPlayer::trackingdata;
@@ -71,7 +71,7 @@ auto CamPlayer::LoadFcs() -> LoadFcsR{
 }
 
 auto CamPlayer::LoadFcs2(const QString& folder, int ix)->bool{
-    CamPlayer::FriendlyColorData& data = _fcs[ix];
+    CamPlayer::FriendlyColorData& data = _fcs[ix];//NOLINT
     //if(!data) return false;
 
     auto d = QDir(folder);
@@ -99,7 +99,7 @@ auto CamPlayer::LoadFcs2(const QString& folder, int ix)->bool{
 }
 
 auto CamPlayer::LoadUnfcs2(const QString& folder, int ix)->bool{
-    CamPlayer::FriendlyColorData& data = _unfcs[ix];
+    CamPlayer::FriendlyColorData& data = _unfcs[ix];//NOLINT
     //if(!data) return false;
 
     auto d = QDir(folder);
@@ -152,7 +152,7 @@ auto CamPlayer::SaveUnfcs() -> SaveFcsR{
 }
 
 auto CamPlayer::SaveUnfcs2(const QString& folder, int ix)->bool{
-    CamPlayer::FriendlyColorData& data = _unfcs[ix];
+    CamPlayer::FriendlyColorData& data = _unfcs[ix]; //NOLINT
 
     auto d = QDir(folder);
     if(!d.exists()) return false;
@@ -200,7 +200,7 @@ auto CamPlayer::GetBallIx(int vix, int fix, double x0, double y0, double d_max)-
 
 auto CamPlayer::SetTracking(int vix, int fix, int bix, int fcix, int x, int y)->SetTrackingR
 {
-    SetTrackingR r;
+    SetTrackingR r{};
     trackingdata.vix=vix;
     trackingdata.fix=fix;
     trackingdata.bix=bix;
@@ -224,7 +224,7 @@ auto CamPlayer::GetTrackingFilterMode()->FilterMode
     return trackingdata.filtermode;
 }
 
-QColor CamPlayer::GetTrackingColor(const QPoint& p, const QSize& s0)
+auto CamPlayer::GetTrackingColor(const QPoint& p, const QSize& s0) -> QColor //NOLINT
 {
     if(trackingdata.image.isNull()) return {};
     auto s = QSizeF(trackingdata.image.size());
@@ -235,7 +235,7 @@ QColor CamPlayer::GetTrackingColor(const QPoint& p, const QSize& s0)
     return trackingdata.image.pixel(x,y);
 }
 
-void CamPlayer::SetTrackingColor(QColor c)
+void CamPlayer::SetTrackingColor(const QColor& c)
 {
     trackingdata.trackingcolor.color = c;
     trackingdata.trackingcolor.friendly_int = FriendlyRGB::ToFriendlyInt(c.red(), c.green(), c.blue());
@@ -250,7 +250,7 @@ auto CamPlayer::GetTrackingColor()->TrackingColor
 auto CamPlayer::AddUnfcs() -> AddUnfcsR
 {
     if(trackingdata.fcix==-1) return {{},false};
-    auto& a = _unfcs[trackingdata.fcix];
+    auto& a = _unfcs[trackingdata.fcix]; //NOLINT
 
     int j0  = a.fcs.size();
     a.fcs.insert(trackingdata.trackingcolor.friendly_int);
@@ -260,10 +260,10 @@ auto CamPlayer::AddUnfcs() -> AddUnfcsR
     return {trackingdata.trackingcolor.fc, j1>j0};
 }
 
-CamPlayer::DelUnfcsR CamPlayer::DelUnfcs(const QString& txt)
+auto CamPlayer::DelUnfcs(const QString& txt) -> CamPlayer::DelUnfcsR
 {
     if(trackingdata.fcix==-1) return {{},false};
-    auto& a = _unfcs[trackingdata.fcix];
+    auto& a = _unfcs[trackingdata.fcix]; //NOLINT
 
     bool isok;
     auto fc = FriendlyRGB::FromCSV(txt, FriendlyRGB::hex, &isok);
@@ -280,7 +280,7 @@ CamPlayer::DelUnfcsR CamPlayer::DelUnfcs(const QString& txt)
 void CamPlayer::GenetareFFcs(){
     if(trackingdata.fcix==-1) return;
     trackingdata.ffcs.clear();
-    auto& unfcs = _unfcs[trackingdata.fcix].fcs;
+    auto& unfcs = _unfcs[trackingdata.fcix].fcs; //NOLINT
     for(auto&i:_fcs[trackingdata.fcix].fcs){
         if(!unfcs.contains(i)) trackingdata.ffcs.insert(i);
     }
@@ -289,7 +289,7 @@ void CamPlayer::GenetareFFcs(){
 auto CamPlayer::GetTrackingUnfc() -> GetTrackingUnfcR
 {
     if(trackingdata.fcix==-1) return {};
-    auto& a = _unfcs[trackingdata.fcix];
+    auto& a = _unfcs[trackingdata.fcix]; //NOLINT
     GetTrackingUnfcR e;
     for(auto&i:a.fcs){
         auto fc = FriendlyRGB::FromFriendlyInt(i);
@@ -410,7 +410,10 @@ auto CamPlayer::GetVideoData(int videoix) -> CamPlayer::VideoData *
 
 auto CamPlayer::GetFrameData(VideoData* videodata, int ix) -> CamPlayer::FrameData*
 {
-    if(videodata!=nullptr && ix>=0 && ix<=videodata->maxframeix && videodata->frames.contains(ix)) return &(videodata->frames[ix]); else return nullptr;
+    if(videodata!=nullptr &&
+        ix>=0 && ix<=videodata->maxframeix &&
+        videodata->frames.contains(ix)) return &(videodata->frames[ix]);
+    return nullptr;
 }
 
 
@@ -477,14 +480,16 @@ auto CamPlayer::Filter(const QImage &image, int fcsix, CamPlayer::FilterMode mod
     QImage img = image.copy();
     trackingdata.image = img;
 
-    QRgb *st = reinterpret_cast<QRgb *>(img.bits());
+    QRgb *st = reinterpret_cast<QRgb *>(img.bits()); // NOLINT
     quint64 pixelCount = img.width() * img.height();
     QRgb *pixel = st;
+    int u;
     for (quint64 p = 0; p < pixelCount; p++) {
         //*pixel = QColor(qRed(*pixel)/2, qGreen(*pixel)/2, qBlue(*pixel)/2).rgb();
         int fi = FriendlyRGB::ToFriendlyInt(*pixel);
         if(mode == FilterMode::Copy){
-            *pixel = *pixel = QColor(qRed(*pixel), qGreen(*pixel), qBlue(*pixel)).rgb();
+            u = *pixel;
+            *pixel = QColor(qRed(u), qGreen(u), qBlue(u)).rgb();
         }
         else if(mode == FilterMode::IsFriendly) {
             if(fcs.contains(fi)) *pixel=0xffffff; else *pixel=0;
@@ -492,7 +497,7 @@ auto CamPlayer::Filter(const QImage &image, int fcsix, CamPlayer::FilterMode mod
         else if(mode == FilterMode::AllFriendly){
             if(!fcs.contains(fi)) *pixel=0;
         }
-        pixel++;
+        pixel++; // NOLINT
     }
     return img;
 }
@@ -518,7 +523,7 @@ auto CamPlayer::toString(const QColor & pix) -> QString
     return FriendlyRGB::toString(r,g,b);
 }
 
-QString CamPlayer::GetColorName(const QColor &color)
+auto CamPlayer::GetColorName(const QColor &color) -> QString
 {
     int color_ix = GetColorIx(color);
     auto name = FriendlyRGB::GetName(color_ix);
@@ -636,7 +641,7 @@ auto CamPlayer::GetColor(int quality)->QColor
         case 0: return Qt::darkRed;
         case 1: return Qt::cyan;
         case 2: return Qt::yellow;
-        case 3: return QColor(255,128,0);
+        case 3: return {255,128,0};
         default: return Qt::red;
     }
 }

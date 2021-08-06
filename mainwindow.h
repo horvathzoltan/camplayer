@@ -30,7 +30,7 @@ public:
     void setui(const CamPlayer);
     void setUi(const CamPlayer::SettingsR&);
     void setUi(const CamPlayer::LoadR&);
-    void setUi(const CamPlayer::AddUnfcsR&);
+    void setUi(CamPlayer::AddUnfcsR );
     void setUi(const CamPlayer::DelUnfcsR &);
 
     void setUi(const CamPlayer::GetTrackingUnfcR&);

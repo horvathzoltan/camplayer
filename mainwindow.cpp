@@ -33,7 +33,7 @@ MainWindow::MainWindow(QWidget *parent)
 }
 
 void MainWindow::setDirLabel(){
-    ui->pushButton_dir->setText(direction?">":"<");
+    ui->pushButton_dir->setText(direction?QStringLiteral(">"):QStringLiteral("<"));
 }
 
 auto MainWindow::GetPicLabelIndex(QWidget* w) -> int
@@ -58,7 +58,8 @@ void MainWindow::on_click(QWidget* w, QMouseEvent* e)
 }
 
 void MainWindow::on_timeout(){
-    if(direction) on_pushButton_next_clicked();
+    if(direction) { on_pushButton_next_clicked();
+    }
     else on_pushButton_prev_clicked();
 }
 
@@ -197,7 +198,7 @@ void MainWindow::setUi(const CamPlayer::SaveFcsR& m)
 }
 
 
-void MainWindow::setUi(const CamPlayer::AddUnfcsR &m)
+void MainWindow::setUi(CamPlayer::AddUnfcsR m)
 {
     if(m.isok){
         QString hexstr = m.fc.toHexString();
@@ -205,7 +206,7 @@ void MainWindow::setUi(const CamPlayer::AddUnfcsR &m)
     }
 }
 
-void MainWindow::setUi(const CamPlayer::DelUnfcsR &m)
+void MainWindow::setUi(const CamPlayer::DelUnfcsR &m) // NOLINT(clazy-function-args-by-value)
 {
     if(m.isok){
         QString hexstr = m.fc.toHexString();
@@ -296,7 +297,9 @@ void MainWindow::onMouseButtonPress(QWidget* w, QMouseEvent * event)
     txt = QStringLiteral("%3: %1,%2").arg(p.x()).arg(p.y()).arg(vix);
 
     //ahogy aránylik a widget a picturehoz
-    auto l = reinterpret_cast<QLabel*>(w);
+
+    auto l = reinterpret_cast<QLabel*>(w); //NOLINT
+
     auto pixmap = l->pixmap(Qt::ReturnByValue);
     if(!pixmap.isNull())
     {

@@ -75,33 +75,32 @@ auto FriendlyRGB::FromCSV(QString str, CsvType ltype, bool *isok) -> FriendlyRGB
 
     switch(ltype)
     {
-    case CsvType::txt:
-    {
-        QStringList s;
-        s = str.split(';');
-        if (s.length() < 3) return {0,0,0};
-        bool ok;
-        byte r = static_cast<byte>(s[0].toInt(&ok));
-        if(!ok)  return {0,0,0};
-        byte g = static_cast<byte>(s[1].toInt(&ok));
-        if(!ok) return {0,0,0};
-        byte b = static_cast<byte>(s[2].toInt(&ok));
-        if(!ok) return {0,0,0};
-        *isok = true;
-        return {r,g,b};
-    }
-    case CsvType::hex:
-    {
-        if (str.length() < 6) return {0,0,0};
-        bool ok;
-        int i = str.toInt(&ok, 16);
-        if(!ok)  return {0,0,0};
-        *isok = true;
-        return FromInt(i);
-    }
-    }
-
-
+        case CsvType::txt:
+        {
+            QStringList s;
+            s = str.split(';');
+            if (s.length() < 3) return {0,0,0};
+            bool ok;
+            byte r = static_cast<byte>(s[0].toInt(&ok));
+            if(!ok)  return {0,0,0};
+            byte g = static_cast<byte>(s[1].toInt(&ok));
+            if(!ok) return {0,0,0};
+            byte b = static_cast<byte>(s[2].toInt(&ok));
+            if(!ok) return {0,0,0};
+            *isok = true;
+            return {r,g,b};
+        }
+        case CsvType::hex:
+        {
+            if (str.length() < 6) return {0,0,0};
+            bool ok;
+            int i = str.toInt(&ok, 16);
+            if(!ok)  return {0,0,0};
+            *isok = true;
+            return FromInt(i);
+        }
+    }    
+    return{};
 }
 
 auto FriendlyRGB::FromInt(int i) -> FriendlyRGB
@@ -137,26 +136,26 @@ auto FriendlyRGB::GetName(int i) -> QString
     return FriendlyRGB::WheelColorsRYBHumNames[i];
 }
 
-int FriendlyRGB::GetRYBIxWheelN(byte r, byte g, byte b, double* d_min, int n)
+auto FriendlyRGB::GetRYBIxWheelN(byte r, byte g, byte b, double* d_min, int n) -> int
 {
     if(n>FriendlyRGB::WheelColorsRYBLen) n = FriendlyRGB::WheelColorsRYBLen;
     CIEDE2000::LAB wheel_lab[FriendlyRGB::WheelColorsRYBLen];
-    double alphas[FriendlyRGB::WheelColorsRYBLen];
+    double alphas[FriendlyRGB::WheelColorsRYBLen]; //NOLINT
 
     for(int i=0;i<FriendlyRGB::WheelColorsRYBLen;i++)
     {
-        auto c = FriendlyRGB::WheelColorsRYB[i];
+        auto c = FriendlyRGB::WheelColorsRYB[i]; //NOLINT
         //        auto c = FriendlyRGB::WheelColors12[i];
 
         auto lab_c = FriendlyRGB::toLab(c.r, c.g, c.b);
-        wheel_lab[i] = lab_c;
+        wheel_lab[i] = lab_c; //NOLINT
         //        zInfo(QStringLiteral("%1: a:%2, b:%3").arg(i).arg(lab_c.a).arg(lab_c.b));
         double a, t;
 
         GeoMath::uIranyszogXY(0,0,lab_c.a, lab_c.b, &a, &t);
-        alphas[i]=a;
+        alphas[i]=a; // NOLINT
 
-        auto ar = qRadiansToDegrees(a);
+        //auto ar = qRadiansToDegrees(a);
 
         //        zInfo(QStringLiteral("%1(%5): a:%2, b:%3 - a:%4")
         //                  .arg(i).arg(lab_c.a).arg(lab_c.b).arg(ar)

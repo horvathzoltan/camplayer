@@ -227,7 +227,7 @@ public:
     static FilterMode GetTrackingFilterMode();
     static QColor GetTrackingColor(const QPoint& p, const QSize& s);
 
-    static void SetTrackingColor(QColor c);
+    static void SetTrackingColor(const QColor& c);
     static TrackingColor GetTrackingColor();
 
     struct AddUnfcsR{
