@@ -405,7 +405,7 @@ auto CamPlayer::ShowTrackingTxt() -> QString
 
 auto CamPlayer::Settings() -> SettingsR
 {
-    return{videoFolder};
+    return{videoFolder, fcsFolder};
 }
 
 auto CamPlayer::LoadExam(const QString& path) -> bool
@@ -612,7 +612,7 @@ auto CamPlayer::GetColorIx(const QColor &color) ->int
         static_cast<byte>(color.blue()));
 
     //auto lab = toLab(frgb.r, frgb.g, frgb.b);
-    double rng;
+    double rng=5;
     static const int n = 6;
     return FriendlyRGB::GetRYBIxWheelN(fc.r, fc.g, fc.b, &rng, n);
 }

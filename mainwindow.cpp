@@ -133,6 +133,7 @@ void MainWindow::on_pushButton_start_clicked(bool checked)
 void MainWindow::on_pushButton_stop_clicked()
 {
     timer.stop();
+    ui->pushButton_start->setText("▶");
 }
 
 void MainWindow::on_pushButton_rew_clicked()
@@ -240,7 +241,8 @@ setUi
 
 void MainWindow::setUi(const CamPlayer::SettingsR& m)
 {
-    ui->label_examId->setText(m.folderName);
+    ui->label_examId->setText(m.video_folderName);
+    ui->label_fcs->setText(m.fcs_folderName);
 }
 
 void MainWindow::setUi(const CamPlayer::LoadR& m)
@@ -250,7 +252,7 @@ void MainWindow::setUi(const CamPlayer::LoadR& m)
 
 void MainWindow::setUi(const CamPlayer::SaveFcsR& m)
 {
-    ui->label_examId->setText(m.folderName);
+    ui->label_fcs->setText(m.folderName);
 }
 
 

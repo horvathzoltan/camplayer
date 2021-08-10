@@ -167,7 +167,7 @@ auto FriendlyRGB::GetRYBIxWheelN(byte r, byte g, byte b, double* d_min, int n) -
     double a0, t0;
     int ix = -1;
     GeoMath::uIranyszogXY(0,0,l0.a, l0.b, &a0, &t0);
-    if(t0>25)
+    if(t0>*d_min)
     {
         *d_min = std::numeric_limits<double>::max();
 

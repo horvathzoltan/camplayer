@@ -141,7 +141,8 @@ public:
 
     struct SettingsR
     {
-        QString folderName;
+        QString video_folderName;
+        QString fcs_folderName;
     };
 
     static SettingsR Settings();
