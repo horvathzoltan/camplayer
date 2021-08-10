@@ -227,8 +227,10 @@ auto CamPlayer::SetTracking(int vix, int fix, int bix, int fcix, int x, int y)->
     trackingdata.vix=vix;
     trackingdata.fix=fix;
     trackingdata.bix=bix;
-    r.fcix_changed = trackingdata.fcix!=fcix;
-    trackingdata.fcix=fcix;
+    if(fcix!=-1){
+        r.fcix_changed = trackingdata.fcix!=fcix;
+        trackingdata.fcix=fcix;
+    }
     trackingdata.x = x;
     trackingdata.y = y;
     r.isValid = trackingdata.isValid();
@@ -597,12 +599,12 @@ auto CamPlayer::toString(const QColor & pix) -> QString
     return FriendlyRGB::toString(r,g,b);
 }
 
-auto CamPlayer::GetColorName(const QColor &color) -> QString
-{
-    int color_ix = GetColorIx(color);
-    auto name = FriendlyRGB::GetName(color_ix);
-    return name;
-}
+//auto CamPlayer::GetColorName(const QColor &color) -> QString
+//{
+//    int color_ix = GetColorIx(color);
+//    auto name = FriendlyRGB::GetName(color_ix);
+//    return name;
+//}
 
 auto CamPlayer::GetColorIx(const QColor &color) ->int
 {

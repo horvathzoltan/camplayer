@@ -20,31 +20,31 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-    void setUi(const CamPlayer::ShowFrameR &m);
+    void setUi_TrackingColor(const CamPlayer::ShowFrameR &m);
     void on_click(QWidget *, QMouseEvent *event);
     int GetPicLabelIndex(QWidget *w);
     int GetZoomLabelIndex(QWidget *w);
-    void setUi(const CamPlayer::LoadFcsR &m);
+    void setUi_TrackingColor(const CamPlayer::LoadFcsR &m);
     void onMouseButtonPress(QWidget *w, QMouseEvent *event);
     void setUi_ShowTrackingR(const CamPlayer::ShowTrackingR &m);
-    void setUi(CamPlayer::FilterMode mode);
-    void setUi(const CamPlayer::TrackingColor& m);
+    void setUi_TrackingColor(CamPlayer::FilterMode mode);
+    void setUi_TrackingColor(const CamPlayer::TrackingColor& m);
     void setui(const CamPlayer);
-    void setUi(const CamPlayer::SettingsR&);
-    void setUi(const CamPlayer::LoadR&);
-    void setUi(CamPlayer::AddUnfcsR );
-    void setUi(const CamPlayer::DelUnfcsR &);
+    void setUi_TrackingColor(const CamPlayer::SettingsR&);
+    void setUi_TrackingColor(const CamPlayer::LoadR&);
+    void setUi_TrackingColor(CamPlayer::AddUnfcsR );
+    void setUi_TrackingColor(const CamPlayer::DelUnfcsR &);
 
     void setUi_GetTrackingUnfcR(const CamPlayer::GetTrackingUnfcR&);
-    void setUi(const CamPlayer::SaveFcsR&);
+    void setUi_TrackingColor(const CamPlayer::SaveFcsR&);
 
     void RefreshDirLabel();
     void RefreshUnfcs();
     void RefreshZoom();
     void listWidget_unfcs_delete_items(const QList<QListWidgetItem*>& items);
     void listWidget_fcs_extra_delete_items(const QList<QListWidgetItem*>& items);
-    void setUi(const CamPlayer::AddFcsExtraR &m);
-    void setUi(const CamPlayer::DelFcsExtraR &m);
+    void setUi_TrackingColor(const CamPlayer::AddFcsExtraR &m);
+    void setUi_TrackingColor(const CamPlayer::DelFcsExtraR &m);
     void ButtonEnable(QPushButton *b, bool s);
     void setUi_GetTrackingFcsExtraR(const CamPlayer::TrackingFcsExtraR &m);
 private slots:

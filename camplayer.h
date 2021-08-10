@@ -181,7 +181,7 @@ public:
     static QString toString(const QColor &pix);
 
     static int GetColorIx(const QColor &color);
-    static QString GetColorName(const QColor& color);
+    //static QString GetColorName(const QColor& color);
 
     static QColor GetColor(int quality);
     static QImage GetImage(int videoix, int fix, int x, int y, int r);
