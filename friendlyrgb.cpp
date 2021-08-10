@@ -265,3 +265,9 @@ QString FriendlyRGB::GetFileName(const QString& name, int i)
     return name+'_'+QString::number(i)+'_'+FriendlyRGB::WheelColorsRYBNames[i]+".txt";
 }
 
+QString FriendlyRGB::GetFileNameFilter(const QString& name, int i)
+{
+    if(i<0) return QLatin1String("");
+    if(i>FriendlyRGB::WheelColorsRYBLen) return "";
+    return name+'_'+QString::number(i)+'_'+FriendlyRGB::WheelColorsRYBNames[i]+"*.txt";
+}

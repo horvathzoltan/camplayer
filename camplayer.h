@@ -52,6 +52,7 @@ public:
         }
 
         QSet<int> ffcs;
+        //QSet<int> fcs;
     };
     static TrackingData trackingdata;
 
@@ -64,7 +65,8 @@ public:
     static const int _fcs_length = 6;
 
     static FriendlyColorData _fcs[_fcs_length];
-    static FriendlyColorData _unfcs[_fcs_length];
+    static FriendlyColorData _unfcs[_fcs_length]; // minuszos
+    static FriendlyColorData _fcs_extra[_fcs_length]; // plusszos
 
     struct BallData{
         QString txt;
@@ -237,6 +239,14 @@ public:
 
     static AddUnfcsR AddUnfcs();
 
+
+    struct AddFcsExtraR{
+        FriendlyRGB fc;
+        bool isok;
+    };
+
+    static AddFcsExtraR AddFcs();
+
     struct DelUnfcsR{
         FriendlyRGB fc;
         bool isok;
@@ -251,8 +261,23 @@ public:
 
     static GetTrackingUnfcR GetTrackingUnfc();
 
+
+    struct TrackingFcsExtraR{
+        QStringList unfcshex;
+        QString name;
+    };
+
+    static TrackingFcsExtraR GetTrackingFcsExtraR();
+
     static void SetVideoData();
-    static void GenetareFFcs();
+    static void AdjoinFFcs();
+
+    struct DelFcsExtraR{
+        FriendlyRGB fc;
+        bool isok;
+    };
+
+    static DelFcsExtraR DelFcsExtra(const QString& txt);
 };
 
 #endif // CAMPLAYER_H

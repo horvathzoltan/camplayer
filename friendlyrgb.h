@@ -63,6 +63,7 @@ public:
     static int ToFriendlyInt(int i);
 
     static FriendlyRGB FromFriendlyInt(int i);
+    static QString GetFileNameFilter(const QString &name, int i);
 };
 
 #endif // FRIENDLYRGB_H

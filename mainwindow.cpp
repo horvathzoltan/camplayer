@@ -14,8 +14,23 @@ MainWindow::MainWindow(QWidget *parent)
 
     setUi(CamPlayer::Settings());
 
-    connect(&timer, &QTimer::timeout, this, &MainWindow::on_timeout);
-    timer.setInterval(16);
+    QSize s = ui->pushButton_next->size();
+
+
+    QRect r(3,3,s.width()-6,s.height()-8);
+
+    auto pixmap = ui->pushButton_next->grab(r);
+
+    QIcon icon;
+    //QPixmap pixmap = QPixmap(r'C:\Users\git\Desktop\test.png').scaled(QSize(160, 90))
+    icon.addPixmap(pixmap.transformed(QTransform().scale(-1,1)));
+    //ui->pushButton_prev->setText(" ");
+    ui->pushButton_prev->setIcon(icon);
+    ui->pushButton_prev->setIconSize(r.size());
+    //ui->pushButton_prev->resize(ui->pushButton_next->frameSize());
+    //pixmap.
+
+    //    ui->pushButton_prev->setGraphicsEffect()
 
     signaler.installOn(ui->label_pic1);
     signaler.installOn(ui->label_pic2);
@@ -29,11 +44,15 @@ MainWindow::MainWindow(QWidget *parent)
 
     setUi(CamPlayer::GetTrackingFilterMode());
     ui->pushButton_dir->setChecked(direction);
-    setDirLabel();
+    RefreshDirLabel();
+
+    ui->spinBox_timer->setValue(timer_step);
+    timer.setInterval(timer_step);
+    connect(&timer, &QTimer::timeout, this, &MainWindow::on_timeout);
 }
 
-void MainWindow::setDirLabel(){
-    ui->pushButton_dir->setText(direction?QStringLiteral(">"):QStringLiteral("<"));
+void MainWindow::RefreshDirLabel(){
+    ui->pushButton_dir->setText(direction?QStringLiteral("➡"):QStringLiteral("⬅"));
 }
 
 auto MainWindow::GetPicLabelIndex(QWidget* w) -> int
@@ -58,9 +77,8 @@ void MainWindow::on_click(QWidget* w, QMouseEvent* e)
 }
 
 void MainWindow::on_timeout(){
-    if(direction) { on_pushButton_next_clicked();
-    }
-    else on_pushButton_prev_clicked();
+    if(direction) on_pushButton_next_clicked();  //NOLINT
+    else on_pushButton_prev_clicked(); //NOLINT
 }
 
 MainWindow::~MainWindow()
@@ -99,6 +117,18 @@ void MainWindow::on_pushButton_start_clicked()
     timer.start();
 }
 
+void MainWindow::on_pushButton_start_clicked(bool checked)
+{
+    if(checked){
+        timer.start();
+        ui->pushButton_start->setText("⏸");
+    }
+    else{
+        timer.stop();
+        ui->pushButton_start->setText("▶");
+    }
+}
+
 
 void MainWindow::on_pushButton_stop_clicked()
 {
@@ -113,64 +143,90 @@ void MainWindow::on_pushButton_rew_clicked()
 
 void MainWindow::on_pushButton_loadfcs_clicked()
 {
-    auto m = CamPlayer::LoadFcs();
+    CamPlayer::LoadFcsR m = CamPlayer::LoadFcs();
     setUi(m);
 
-    auto m2 = CamPlayer::GetTrackingUnfc();
-    setUi(m2);
+    RefreshUnfcs();
+    //RefreshFcsExtra();
+    RefreshZoom();
 }
 
 void MainWindow::on_radioButton_copy_clicked()
 {
     CamPlayer::SetTracking(CamPlayer::FilterMode::Copy);
-    auto m2 = CamPlayer::ShowTracking();
-    setUi(m2);
+    RefreshZoom();
 }
 
 void MainWindow::on_radioButton_isfriendly_clicked()
 {
     CamPlayer::SetTracking(CamPlayer::FilterMode::IsFriendly);
-    auto m2 = CamPlayer::ShowTracking();
-    setUi(m2);
+    RefreshZoom();
 }
-
 
 void MainWindow::on_radioButton_allfriendly_clicked()
 {
     CamPlayer::SetTracking(CamPlayer::FilterMode::AllFriendly);
-    auto m2 = CamPlayer::ShowTracking();
-    setUi(m2);
+    RefreshZoom();
+}
+
+
+void MainWindow::on_spinBox_timer_valueChanged(int arg1)
+{
+    timer_step = arg1;
+    timer.setInterval(timer_step);
 }
 
 void MainWindow::on_pushButton_unfc_add_clicked()
 {
     CamPlayer::AddUnfcsR m =CamPlayer::AddUnfcs();
     setUi(m);
-    if(m.isok)
-    {
-        auto trackingdata = CamPlayer::ShowTracking();
-        setUi(trackingdata);
-    }
+    if(m.isok) RefreshZoom();
+
 }
+
+void MainWindow::on_pushButton_fcs_extra_add_clicked()
+{
+    CamPlayer::AddFcsExtraR m =CamPlayer::AddFcs();
+    setUi(m);
+    if(m.isok) RefreshZoom();
+
+}
+
 
 void MainWindow::on_pushButton_unfc_del_clicked()
 {
     auto items = ui->listWidget_unfcs->selectedItems();
-    auto item = items.first();
-    auto txt = item->text();
-    CamPlayer::DelUnfcsR m = CamPlayer::DelUnfcs(txt);
-    setUi(m);
-    if(m.isok)
-    {
-        auto trackingdata = CamPlayer::ShowTracking();
-        setUi(trackingdata);
+    //ui->pushButton_unfc_del->setDisabled(items.isEmpty());
+    //if(items.empty()) return;
+
+    for(auto&item:items){
+        auto txt = item->text();
+        CamPlayer::DelUnfcsR m = CamPlayer::DelUnfcs(txt);
+        setUi(m);
+        if(m.isok) RefreshZoom();
+        //delete ui->listWidget_unfcs->takeItem(ui->listWidget_unfcs->row(item));
+    }
+}
+
+void MainWindow::on_pushButton_fcs_extra_del_clicked()
+{
+    auto items = ui->listWidget_fcs_extra->selectedItems();
+    //ui->pushButton_fc_extra_del->setDisabled(items.isEmpty());
+    //if(items.empty()) return;
+
+    for(auto&item:items){
+        auto txt = item->text();
+        CamPlayer::DelFcsExtraR m = CamPlayer::DelFcsExtra(txt);
+        setUi(m);
+        if(m.isok) RefreshZoom();
+        //delete ui->listWidget_unfcs->takeItem(ui->listWidget_unfcs->row(item));
     }
 }
 
 void MainWindow::on_pushButton_dir_clicked(bool checked)
 {
     direction = checked;
-    setDirLabel();
+    RefreshDirLabel();
 }
 
 void MainWindow::on_pushButton_savefcs_clicked()
@@ -206,22 +262,58 @@ void MainWindow::setUi(CamPlayer::AddUnfcsR m)
     }
 }
 
+void MainWindow::setUi(const CamPlayer::AddFcsExtraR &m)
+{
+    if(m.isok){
+        QString hexstr = m.fc.toHexString();
+        ui->listWidget_fcs_extra->addItem(hexstr);
+    }
+}
+
+
+void MainWindow::listWidget_unfcs_delete_items(const QList<QListWidgetItem*>& items){
+    foreach(QListWidgetItem * item, items)
+    {
+        delete ui->listWidget_unfcs->takeItem(ui->listWidget_unfcs->row(item));
+    }
+}
+
+void MainWindow::listWidget_fcs_extra_delete_items(const QList<QListWidgetItem*>& items){
+    foreach(QListWidgetItem * item, items)
+    {
+        delete ui->listWidget_fcs_extra->takeItem(ui->listWidget_fcs_extra->row(item));
+    }
+}
+
 void MainWindow::setUi(const CamPlayer::DelUnfcsR &m) // NOLINT(clazy-function-args-by-value)
 {
     if(m.isok){
         QString hexstr = m.fc.toHexString();
         auto items = ui->listWidget_unfcs->findItems(hexstr, Qt::MatchExactly);
-        foreach(QListWidgetItem * item, items)
-        {
-            delete ui->listWidget_unfcs->takeItem(ui->listWidget_unfcs->row(item));
-        }
+        listWidget_unfcs_delete_items(items);
+
     }
 }
 
-void MainWindow::setUi(const CamPlayer::GetTrackingUnfcR &m)
+void MainWindow::setUi(const CamPlayer::DelFcsExtraR &m) // NOLINT(clazy-function-args-by-value)
+{
+    if(m.isok){
+        QString hexstr = m.fc.toHexString();
+        auto items = ui->listWidget_fcs_extra->findItems(hexstr, Qt::MatchExactly);
+        listWidget_fcs_extra_delete_items(items);
+    }
+}
+
+void MainWindow::setUi_GetTrackingUnfcR(const CamPlayer::GetTrackingUnfcR &m)
 {
     ui->listWidget_unfcs->insertItems(0, m.unfcshex);
     ui->label_unfcs_name->setText(m.name);
+}
+
+void MainWindow::setUi_GetTrackingFcsExtraR(const CamPlayer::TrackingFcsExtraR &m)
+{
+    ui->listWidget_fcs_extra->insertItems(0, m.unfcshex);
+    //ui->label_fcs_extra_name->setText(m.name);
 }
 
 void MainWindow::setUi(const CamPlayer::ShowFrameR& m)
@@ -277,13 +369,35 @@ void MainWindow::setUi(const CamPlayer::ShowFrameR& m)
         ui->label_pic4->setPixmap(pixmap);
     }
 
-    auto m2 = CamPlayer::ShowTracking();
-    setUi(m2);
+    RefreshZoom();
 }
 
 void MainWindow::setUi(const CamPlayer::LoadFcsR& m)
 {
     ui->label_fcs->setText(m.folderName+':'+QString::number(m.fcs_count)+','+QString::number(m.unfcs_count));
+    RefreshUnfcs();
+}
+
+void MainWindow::RefreshUnfcs(){
+    ui->listWidget_unfcs->clear();
+    auto fcs = CamPlayer::GetTrackingUnfc();
+    setUi_GetTrackingUnfcR(fcs);
+
+    ui->listWidget_fcs_extra->clear();
+    auto fcs_extra = CamPlayer::GetTrackingFcsExtraR();
+    setUi_GetTrackingFcsExtraR(fcs_extra);
+}
+
+//void MainWindow::RefreshFcsExtra(){
+//    ui->listWidget_fcs_extra->clear();
+//    auto fcs = CamPlayer::GetTrackingFcsExtra();
+//    setUi_GetTrackingUnfcR(fcs);
+//}
+
+void MainWindow::RefreshZoom()
+{
+    auto m2 = CamPlayer::ShowTracking();
+    setUi_ShowTrackingR(m2);
 }
 
 void MainWindow::onMouseButtonPress(QWidget* w, QMouseEvent * event)
@@ -301,10 +415,8 @@ void MainWindow::onMouseButtonPress(QWidget* w, QMouseEvent * event)
     auto l = reinterpret_cast<QLabel*>(w); //NOLINT
 
     auto pixmap = l->pixmap(Qt::ReturnByValue);
-    if(!pixmap.isNull())
-    {
-        if(vix!=-1)
-        {
+    if(!pixmap.isNull()){
+        if(vix!=-1){// a videón
             double rx = pixmap.width()/l->width();
             double ry = pixmap.height()/l->height();
 
@@ -327,28 +439,48 @@ void MainWindow::onMouseButtonPress(QWidget* w, QMouseEvent * event)
 
             auto trackingR = CamPlayer::SetTracking(vix, -1, ballIx , color_ix, x, y);
             QString tracking_txt = CamPlayer::ShowTrackingTxt();
-            auto trackingdata = CamPlayer::ShowTracking();
-            setUi(trackingdata);
+            RefreshZoom();
             ui->label_tracking->setText(tracking_txt);
-            if(trackingR.fcix_changed)
-            {
-                ui->listWidget_unfcs->clear();
-                auto fcs = CamPlayer::GetTrackingUnfc();
-                setUi(fcs);
-            }
+            if(trackingR.fcix_changed) RefreshUnfcs();
             auto r2 = CamPlayer::GotoFrame(-1);
             setUi(r2);
 
         }
-        else{
+        else{ // a zoomon
             int zix = GetZoomLabelIndex(w);
             if(zix!=-1){
                 QColor c = CamPlayer::GetTrackingColor(p, l->size());
+
+                auto lab = FriendlyRGB::toLab(c.red(), c.green(),c.blue());
+                QString labtxt =
+                    QString::number(lab.l, 'f', 0)+' '+
+                    QString::number(lab.a, 'f', 0)+' '+
+                    QString::number(lab.b, 'f', 0);
+                ui->label_tracking->setText(labtxt);
+
                 QString txt4 = CamPlayer::toHexString(c);
                 ui->label_filterclick->setText(txt4);
+
+                int f_int = FriendlyRGB::ToFriendlyInt((byte)c.red(), (byte)c.green(), (byte)c.blue());
+                QString f_txt4 = FriendlyRGB::FromFriendlyInt(f_int).toHexString();
+                ui->label_unfcs->setText(f_txt4);
+
                 CamPlayer::SetTrackingColor(c);
                 auto tcolor = CamPlayer::GetTrackingColor();
                 setUi(tcolor);
+
+                {
+                auto items = ui->listWidget_unfcs->findItems(f_txt4, Qt::MatchExactly);
+                ButtonEnable(ui->pushButton_unfc_del, !items.isEmpty());
+                ui->listWidget_unfcs->clearSelection();
+                for(auto&item:items) item->setSelected(true);
+                }
+                {
+                auto items2 = ui->listWidget_fcs_extra->findItems(f_txt4, Qt::MatchExactly);
+                ButtonEnable(ui->pushButton_fcs_extra_del, !items2.isEmpty());
+                ui->listWidget_fcs_extra->clearSelection();
+                for(auto&item:items2) item->setSelected(true);
+                }
             }
         }
     }
@@ -356,7 +488,22 @@ void MainWindow::onMouseButtonPress(QWidget* w, QMouseEvent * event)
     ui->label_msg->setText(txt);
 }
 
-void MainWindow::setUi(const CamPlayer::ShowTrackingR& m){
+void MainWindow::ButtonEnable(QPushButton *b, bool s){
+    b->setEnabled(s);
+    auto p = b->palette();
+    static const QColor original_color = p.color(QPalette::Button);
+    if(s){
+        p.setColor(QPalette::Button, Qt::darkGreen);
+        b->setPalette(p);
+    }
+    else{
+        p.setColor(QPalette::Button, original_color);
+        b->setPalette(p);
+    }
+
+}
+
+void MainWindow::setUi_ShowTrackingR(const CamPlayer::ShowTrackingR& m){
     auto size2 = ui->label_zoom->size();
     if(m.image.isNull()){
         ui->label_zoom->clear();
@@ -393,6 +540,26 @@ void MainWindow::setUi(CamPlayer::FilterMode mode){
 }
 
 
+void MainWindow::on_listWidget_fcs_extra_itemClicked(QListWidgetItem *item)
+{
+    ButtonEnable(ui->pushButton_fcs_extra_del, true);
+
+    auto items = ui->listWidget_unfcs->findItems(item->text(), Qt::MatchExactly);
+    ButtonEnable(ui->pushButton_unfc_del, !items.isEmpty());
+
+    ui->listWidget_unfcs->clearSelection();
+    for(auto&item:items) item->setSelected(true);
+}
 
 
+void MainWindow::on_listWidget_unfcs_itemClicked(QListWidgetItem *item)
+{
+    ButtonEnable(ui->pushButton_unfc_del, true);
+
+    auto items = ui->listWidget_fcs_extra->findItems(item->text(), Qt::MatchExactly);
+    ButtonEnable(ui->pushButton_fcs_extra_del, !items.isEmpty());
+
+    ui->listWidget_fcs_extra->clearSelection();
+    for(auto&item:items) item->setSelected(true);
+}
 

@@ -23,6 +23,7 @@ CamPlayer::VideoData CamPlayer::video3 = {};
 CamPlayer::VideoData CamPlayer::video4 = {};
 CamPlayer::FriendlyColorData CamPlayer::_fcs[_fcs_length]; //NOLINT
 CamPlayer::FriendlyColorData CamPlayer::_unfcs[_fcs_length]; //NOLINT
+CamPlayer::FriendlyColorData CamPlayer::_fcs_extra[_fcs_length]; //NOLINT
 bool CamPlayer::isInited=false;
 
 CamPlayer::TrackingData CamPlayer::trackingdata;
@@ -66,7 +67,7 @@ auto CamPlayer::LoadFcs() -> LoadFcsR{
     }
 
 
-    GenetareFFcs();
+    AdjoinFFcs();
     return {fcsFolder,n, m};
 }
 
@@ -100,28 +101,48 @@ auto CamPlayer::LoadFcs2(const QString& folder, int ix)->bool{
 
 auto CamPlayer::LoadUnfcs2(const QString& folder, int ix)->bool{
     CamPlayer::FriendlyColorData& data = _unfcs[ix];//NOLINT
+    CamPlayer::FriendlyColorData& data2 = _fcs_extra[ix];//NOLINT
     //if(!data) return false;
 
     auto d = QDir(folder);
     if(!d.exists()) return false;
-
     QString fn = FriendlyRGB::GetFileName(QStringLiteral("ufc"), ix);
 
-    QString fullpath = d.filePath(fn);
+    //QString fullpath = d.filePath(fn);
+
+    QString fn_filter = FriendlyRGB::GetFileNameFilter(QStringLiteral("ufc"), ix);
+
+    auto files = d.entryList({fn_filter},QDir::Files);
 
     data.fcs.clear();
-    data.fileName = fullpath;
+    data.fileName = d.filePath(fn_filter);
     data.ix=ix;
 
-    if(!QFileInfo(fullpath).exists()) return false;
-    auto lines = FileHelper::LoadText(fullpath);
+    QStringList lines;
+    for(auto& fff:files){
+        QString fullpath = d.filePath(fff);
+        if(!QFileInfo(fullpath).exists()) continue;;
+        auto lll = FileHelper::LoadText(fullpath);
+        lines.append(lll);
+    }
     if(lines.isEmpty()) return false;
     for(auto&line:lines){
         if(line.isEmpty()) continue;
-        bool ok;
-        auto fc = FriendlyRGB::FromCSV(line, FriendlyRGB::CsvType::hex, &ok);
+        bool isExtra=false;
+        QString line2 = line;
+        if(line2.endsWith('+')){
+            line2= line2.left(line2.length()-1);
+            isExtra = true;
+        }
+
+        bool ok;        
+        auto fc = FriendlyRGB::FromCSV(line2, FriendlyRGB::CsvType::hex, &ok);
         auto fi = FriendlyRGB::ToFriendlyInt(fc.r, fc.g, fc.b);
-        data.fcs.insert(fi);
+        if(isExtra){
+            data2.fcs.insert(fi);
+        } else {
+            data.fcs.insert(fi);
+        }
     }
     return true;
 }
@@ -141,18 +162,16 @@ auto CamPlayer::SaveUnfcs() -> SaveFcsR{
     int n=0,m=0;
     for(int i=0 ;i<_fcs_length;i++){
         bool isok;
-//        isok = LoadFcs2(fcsFolder, i);
-//        if(isok) n++;
         isok = SaveUnfcs2(settings.fcspath, i);
         if(isok) m++;
     }
-
 
     return {fcsFolder,n, m};
 }
 
 auto CamPlayer::SaveUnfcs2(const QString& folder, int ix)->bool{
     CamPlayer::FriendlyColorData& data = _unfcs[ix]; //NOLINT
+    CamPlayer::FriendlyColorData& data2 = _fcs_extra[ix]; //NOLINT
 
     auto d = QDir(folder);
     if(!d.exists()) return false;
@@ -167,6 +186,10 @@ auto CamPlayer::SaveUnfcs2(const QString& folder, int ix)->bool{
     for(auto&i:data.fcs){
         auto fc = FriendlyRGB::FromFriendlyInt(i);
         lines.append(fc.toHexString());
+    }
+    for(auto&i:data2.fcs){
+        auto fc = FriendlyRGB::FromFriendlyInt(i);
+        lines.append(fc.toHexString()+"+");
     }
     FileHelper::SaveText(fullpath, lines);
     return true;
@@ -210,7 +233,7 @@ auto CamPlayer::SetTracking(int vix, int fix, int bix, int fcix, int x, int y)->
     trackingdata.y = y;
     r.isValid = trackingdata.isValid();
 
-    if(r.fcix_changed) GenetareFFcs();
+    if(r.fcix_changed) AdjoinFFcs();
     return r;
 }
 
@@ -224,7 +247,7 @@ auto CamPlayer::GetTrackingFilterMode()->FilterMode
     return trackingdata.filtermode;
 }
 
-auto CamPlayer::GetTrackingColor(const QPoint& p, const QSize& s0) -> QColor //NOLINT
+auto CamPlayer::GetTrackingColor(const QPoint& p, const QSize& s0) -> QColor // NOLINT(clazy-function-args-by-value)
 {
     if(trackingdata.image.isNull()) return {};
     auto s = QSizeF(trackingdata.image.size());
@@ -256,9 +279,23 @@ auto CamPlayer::AddUnfcs() -> AddUnfcsR
     a.fcs.insert(trackingdata.trackingcolor.friendly_int);
     int j1  = a.fcs.size();
 
-    GenetareFFcs();
+    AdjoinFFcs();
     return {trackingdata.trackingcolor.fc, j1>j0};
 }
+
+auto CamPlayer::AddFcs() -> AddFcsExtraR
+{
+    if(trackingdata.fcix==-1) return {{},false};
+    auto& a = _fcs_extra[trackingdata.fcix]; //NOLINT
+
+    int j0  = a.fcs.size();
+    a.fcs.insert(trackingdata.trackingcolor.friendly_int);
+    int j1  = a.fcs.size();
+
+    AdjoinFFcs();
+    return {trackingdata.trackingcolor.fc, j1>j0};
+}
+
 
 auto CamPlayer::DelUnfcs(const QString& txt) -> CamPlayer::DelUnfcsR
 {
@@ -273,16 +310,39 @@ auto CamPlayer::DelUnfcs(const QString& txt) -> CamPlayer::DelUnfcsR
     a.fcs.remove(friendly_int);
     int j1  = a.fcs.size();
 
-    GenetareFFcs();
+    AdjoinFFcs(); // ez a trackeléshez használt táblázatot önti össze
     return {fc, j1<j0};
 }
 
-void CamPlayer::GenetareFFcs(){
+auto CamPlayer::DelFcsExtra(const QString& txt) -> CamPlayer::DelFcsExtraR
+{
+    if(trackingdata.fcix==-1) return {{},false};
+    auto& a = _fcs_extra[trackingdata.fcix]; //NOLINT
+
+    bool isok;
+    auto fc = FriendlyRGB::FromCSV(txt, FriendlyRGB::hex, &isok);
+    auto friendly_int = fc.toFriendlyInt();
+
+    int j0  = a.fcs.size();
+    a.fcs.remove(friendly_int);
+    int j1  = a.fcs.size();
+
+    AdjoinFFcs(); // ez a trackeléshez használt táblázatot önti össze
+    return {fc, j1<j0};
+}
+
+void CamPlayer::AdjoinFFcs(){
     if(trackingdata.fcix==-1) return;
     trackingdata.ffcs.clear();
     auto& unfcs = _unfcs[trackingdata.fcix].fcs; //NOLINT
     for(auto&i:_fcs[trackingdata.fcix].fcs){
         if(!unfcs.contains(i)) trackingdata.ffcs.insert(i);
+    }
+
+    //auto& unfcs2 = _unfcs2[trackingdata.fcix].fcs; //NOLINT
+    for(auto&i:_fcs_extra[trackingdata.fcix].fcs){
+        if(!unfcs.contains(i)) trackingdata.ffcs.insert(i);
+        //if(!unfcs2.contains(i)) trackingdata.ffcs.insert(i);
     }
 }
 
@@ -291,6 +351,20 @@ auto CamPlayer::GetTrackingUnfc() -> GetTrackingUnfcR
     if(trackingdata.fcix==-1) return {};
     auto& a = _unfcs[trackingdata.fcix]; //NOLINT
     GetTrackingUnfcR e;
+    for(auto&i:a.fcs){
+        auto fc = FriendlyRGB::FromFriendlyInt(i);
+        auto j = fc.toHexString();
+        e.unfcshex.append(j);
+    }
+    e.name = FriendlyRGB::GetName(trackingdata.fcix);
+    return e;
+}
+
+auto CamPlayer::GetTrackingFcsExtraR() -> TrackingFcsExtraR
+{
+    if(trackingdata.fcix==-1) return {};
+    auto& a = _fcs_extra[trackingdata.fcix]; //NOLINT
+    TrackingFcsExtraR e;
     for(auto&i:a.fcs){
         auto fc = FriendlyRGB::FromFriendlyInt(i);
         auto j = fc.toHexString();

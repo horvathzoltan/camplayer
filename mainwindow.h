@@ -3,7 +3,9 @@
 
 #include <QMainWindow>
 #include <QTimer>
-
+#include <QList>
+#include <QListWidgetItem>
+#include <QPushButton>
 #include "camplayer.h"
 
 QT_BEGIN_NAMESPACE
@@ -24,7 +26,7 @@ public:
     int GetZoomLabelIndex(QWidget *w);
     void setUi(const CamPlayer::LoadFcsR &m);
     void onMouseButtonPress(QWidget *w, QMouseEvent *event);
-    void setUi(const CamPlayer::ShowTrackingR &m);
+    void setUi_ShowTrackingR(const CamPlayer::ShowTrackingR &m);
     void setUi(CamPlayer::FilterMode mode);
     void setUi(const CamPlayer::TrackingColor& m);
     void setui(const CamPlayer);
@@ -33,10 +35,18 @@ public:
     void setUi(CamPlayer::AddUnfcsR );
     void setUi(const CamPlayer::DelUnfcsR &);
 
-    void setUi(const CamPlayer::GetTrackingUnfcR&);
+    void setUi_GetTrackingUnfcR(const CamPlayer::GetTrackingUnfcR&);
     void setUi(const CamPlayer::SaveFcsR&);
 
-    void setDirLabel();
+    void RefreshDirLabel();
+    void RefreshUnfcs();
+    void RefreshZoom();
+    void listWidget_unfcs_delete_items(const QList<QListWidgetItem*>& items);
+    void listWidget_fcs_extra_delete_items(const QList<QListWidgetItem*>& items);
+    void setUi(const CamPlayer::AddFcsExtraR &m);
+    void setUi(const CamPlayer::DelFcsExtraR &m);
+    void ButtonEnable(QPushButton *b, bool s);
+    void setUi_GetTrackingFcsExtraR(const CamPlayer::TrackingFcsExtraR &m);
 private slots:
     void on_pushButton_load_clicked();
     void on_pushButton_next_clicked();
@@ -54,7 +64,20 @@ private slots:
 
     void on_pushButton_unfc_del_clicked();
 
+    void on_spinBox_timer_valueChanged(int arg1);
+
+    void on_pushButton_start_clicked(bool checked);
+
+    void on_pushButton_fcs_extra_add_clicked();
+
+    void on_pushButton_fcs_extra_del_clicked();
+
+    void on_listWidget_fcs_extra_itemClicked(QListWidgetItem *item);
+
+    void on_listWidget_unfcs_itemClicked(QListWidgetItem *item);
+
 private:
+    int timer_step=16;
     Ui::MainWindow *ui;
     QTimer timer;
     bool direction = true;
