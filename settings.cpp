@@ -24,7 +24,7 @@ Settings::Settings()
     videopath4 = QStringLiteral("left_cam");
     fcspath = QStringLiteral("/mnt/shared/hwupdatefiles/a/fc_15_gene2");
     //unfcspath = QStringLiteral("/mnt/shared/hwupdatefiles/a/unfc_15_gene2");
-    tracking_radius = 30;
+    tracking_radius = 25;
 }
 
 auto Settings::Load() -> bool

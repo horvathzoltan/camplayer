@@ -17,6 +17,7 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     mousebuttonsignaler.cpp \
+    mousemovesignaler.cpp \
     settings.cpp
 
 HEADERS += \
@@ -28,6 +29,7 @@ HEADERS += \
     global.h \
     mainwindow.h \
     mousebuttonsignaler.h \
+    mousemovesignaler.h \
     settings.h
 
 FORMS += \

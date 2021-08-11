@@ -43,19 +43,20 @@ auto CamPlayer::Load(QWidget *parent) -> CamPlayer::LoadR
         settings.lastOpenedFolder,
         QFileDialog::ShowDirsOnly| QFileDialog::DontResolveSymlinks
         );
-
+    if(videoFolder.isEmpty()) return{{},true};
     settings.lastOpenedFolder = videoFolder;
     LoadExam(videoFolder);
-    return {videoFolder};
+    return {videoFolder, false};
 }
 
-auto CamPlayer::LoadFcs() -> LoadFcsR{
+auto CamPlayer::LoadFcs(QWidget *parent) -> LoadFcsR{
     fcsFolder = QFileDialog::getExistingDirectory(
-            nullptr,
+            parent,
             QStringLiteral("Open Folder"),
             settings.fcspath,
             QFileDialog::ShowDirsOnly| QFileDialog::DontResolveSymlinks
             );
+    if(fcsFolder.isEmpty()) return{{}, 0, 0, true};
     settings.fcspath = fcsFolder;
 
     int n=0,m=0;
@@ -68,7 +69,7 @@ auto CamPlayer::LoadFcs() -> LoadFcsR{
 
 
     AdjoinFFcs();
-    return {fcsFolder,n, m};
+    return {fcsFolder,n, m, false};
 }
 
 auto CamPlayer::LoadFcs2(const QString& folder, int ix)->bool{
@@ -220,6 +221,27 @@ auto CamPlayer::GetBallIx(int vix, int fix, double x0, double y0, double d_max)-
     }
     return ix_min;
 }
+
+auto CamPlayer::SetTrackingFcix(int fcix)->SetTrackingR
+{
+    SetTrackingR r{};
+
+
+    if(fcix!=-1){
+        r.fcix_changed = trackingdata.fcix!=fcix;
+        trackingdata.fcix=fcix;
+    }
+
+    r.isValid = trackingdata.isValid();
+
+    if(r.fcix_changed) AdjoinFFcs();
+    return r;
+}
+
+//QSize CamPlayer::trackingdata_image_size()
+//{
+//    return trackingdata.image.size();
+//}
 
 auto CamPlayer::SetTracking(int vix, int fix, int bix, int fcix, int x, int y)->SetTrackingR
 {
@@ -378,10 +400,14 @@ auto CamPlayer::GetTrackingFcsExtraR() -> TrackingFcsExtraR
 
 auto CamPlayer::ShowTracking() -> CamPlayer::ShowTrackingR
 {
-    if(!trackingdata.isValid()) return {};
+    ShowTrackingR r;
+    //r.x = trackingdata.x;
+    //r.y = trackingdata.y;
+    r.fcs_count = _fcs->fcs.size();
+    if(!trackingdata.isValid()) return r;
     auto videodata = GetVideoData(trackingdata.vix);
     auto framedata = GetFrameData(videodata, frameix);
-    if(!framedata || framedata->image.isNull()) return{};
+    if(!framedata || framedata->image.isNull()) return r;
     auto s = QSizeF(framedata->image.size());
     double x, y;
     if(trackingdata.bix==-1) {
@@ -389,15 +415,15 @@ auto CamPlayer::ShowTracking() -> CamPlayer::ShowTrackingR
         y = trackingdata.y;//*s.height();
     }
     else{
-        if(!framedata->metadata.balldata.contains(trackingdata.bix)) return{};
+        if(!framedata->metadata.balldata.contains(trackingdata.bix)) return r;
         auto b = framedata->metadata.balldata[trackingdata.bix];
         x = b.x*s.width();
         y = b.y*s.height();
     }
 
-    QImage image = CamPlayer::GetImage(videodata, frameix, x, y, settings.tracking_radius);
-    QImage image_filtered = CamPlayer::Filter(image, trackingdata.fcix, trackingdata.filtermode);
-    return{image, image_filtered};
+    r.image = CamPlayer::GetImage(videodata, frameix, x, y, settings.tracking_radius);
+    r.image_filtered = CamPlayer::Filter(r.image, trackingdata.fcix, trackingdata.filtermode, &r.fpixel_count);
+    return r;
 }
 
 auto CamPlayer::ShowTrackingTxt() -> QString
@@ -548,8 +574,10 @@ auto CamPlayer::GetImage(VideoData* videodata, int fix, int center_x, int center
     return image;
 }
 
-auto CamPlayer::Filter(const QImage &image, int fcsix, CamPlayer::FilterMode mode) -> QImage
+auto CamPlayer::Filter(const QImage &image, int fcsix, CamPlayer::FilterMode mode, int *counter) -> QImage
 {
+    if(counter==nullptr) return {};
+    *counter = 0;
     if(fcsix<0||fcsix>_fcs_length-1) return {};
     auto& fcs = trackingdata.ffcs;//_fcs[fcsix];
     if(fcs.empty()) return {};
@@ -568,10 +596,15 @@ auto CamPlayer::Filter(const QImage &image, int fcsix, CamPlayer::FilterMode mod
             *pixel = QColor(qRed(u), qGreen(u), qBlue(u)).rgb();
         }
         else if(mode == FilterMode::IsFriendly) {
-            if(fcs.contains(fi)) *pixel=0xffffff; else *pixel=0;
+            if(fcs.contains(fi)){
+                (*counter)++;
+                *pixel=0xffffff;
+            } else *pixel=0;
         }
         else if(mode == FilterMode::AllFriendly){
-            if(!fcs.contains(fi)) *pixel=0;
+            if(fcs.contains(fi)){
+                (*counter)++;
+            }else *pixel=0;
         }
         pixel++; // NOLINT
     }
@@ -622,12 +655,19 @@ auto CamPlayer::GetColorIx(const QColor &color) ->int
 
 auto CamPlayer::ShowFrame(int ix)->  CamPlayer::ShowFrameR
 {
+    bool hasNext = ix < video1.maxframeix
+        && ix < video2.maxframeix
+        && ix < video3.maxframeix
+        && ix < video4.maxframeix;
+    bool hasPrev = ix>0;
     return{
         GetFrameData(&video1,ix),
         GetFrameData(&video2,ix),
         GetFrameData(&video3,ix),
         GetFrameData(&video4,ix),
-        ix
+        ix,
+        hasNext,
+        hasPrev
     };
 }
 
@@ -789,9 +829,24 @@ void CamPlayer::DrawMetaData(QPainter& painter, const FrameMetaData&m, QSize siz
 
         if(tracked) {
             painter.drawRect(rectangle);
+            rectangle.adjust(-1, -1, 1, 1);
+            painter.drawRect(rectangle);
         } else{
             painter.drawArc(rectangle, 0, 5760);
         }
+    }
+    if(trackingdata.vix == m.videoix
+        && trackingdata.bix==-1)
+    {
+        int x = trackingdata.x;
+        int y = trackingdata.y;
+
+        QBrush br(Qt::cyan);
+        QPen pen(br, 3);
+        painter.setPen(pen);
+
+        painter.drawLine(x, y-tr, x, y+tr);
+        painter.drawLine(x-tr, y, x+tr, y);
     }
 }
 

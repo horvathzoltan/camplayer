@@ -1,12 +1,13 @@
 #include "mainwindow.h"
 #include "mousebuttonsignaler.h"
+#include "mousemovesignaler.h"
 
 #include <QApplication>
 #include "settings.h"
 
 Settings settings;
 MouseButtonSignaler signaler;
-
+MouseMoveSignaler mouse_move_signaler;
 
 int main(int argc, char *argv[])
 {

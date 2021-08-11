@@ -10,14 +10,17 @@ class MouseButtonSignaler : public QObject {
              || ev->type() == QEvent::MouseButtonRelease
              || ev->type() == QEvent::MouseButtonDblClick)
             && obj->isWidgetType())
+        {
             emit mouseButtonEvent(static_cast<QWidget*>(obj),
                             static_cast<QMouseEvent*>(ev));
+        }
         return false;
     }
 public:
     Q_SIGNAL void mouseButtonEvent(QWidget *, QMouseEvent *);
     MouseButtonSignaler(QObject * parent = 0) : QObject(parent) {}
-    void installOn(QWidget * widget) {
+    void installOn(QWidget * widget)
+    {
         widget->installEventFilter(this);
     }
 };

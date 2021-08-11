@@ -1,10 +1,12 @@
 #include "mainwindow.h"
 #include "mousebuttonsignaler.h"
+#include "mousemovesignaler.h"
 #include "ui_mainwindow.h"
 
 #include <QPainter>
 #include <Qt>
 extern MouseButtonSignaler signaler;
+extern MouseMoveSignaler mouse_move_signaler;
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -17,7 +19,7 @@ MainWindow::MainWindow(QWidget *parent)
     QSize s = ui->pushButton_next->size();
 
 
-    QRect r(3,3,s.width()-6,s.height()-8);
+    QRect r(3,1,s.width()-6,s.height()-8);
 
     auto pixmap = ui->pushButton_next->grab(r);
 
@@ -40,7 +42,14 @@ MainWindow::MainWindow(QWidget *parent)
     signaler.installOn(ui->label_zoom);
     signaler.installOn(ui->label_zoom_2);
 
-    QObject::connect(&signaler, &MouseButtonSignaler::mouseButtonEvent, this, &MainWindow::on_click);
+    QObject::connect(&signaler, &MouseButtonSignaler::mouseButtonEvent,
+                     this, &MainWindow::on_click);
+
+    mouse_move_signaler.installOn(ui->label_zoom);
+    mouse_move_signaler.installOn(ui->label_zoom_2);
+    QObject::connect(&mouse_move_signaler, &MouseMoveSignaler::mouseMoveEvent,
+                     this, &MainWindow::on_move);
+
 
     setUi_TrackingColor(CamPlayer::GetTrackingFilterMode());
     ui->pushButton_dir->setChecked(direction);
@@ -60,10 +69,11 @@ MainWindow::MainWindow(QWidget *parent)
         auto item=new QListWidgetItem (ic, FriendlyRGB::WheelColorsRYBHumNames[i]);
         ui->listWidget_col_names->insertItem(i,item);
     }
+
 }
 
 void MainWindow::RefreshDirLabel(){
-    ui->pushButton_dir->setText(direction?QStringLiteral("➡"):QStringLiteral("⬅"));
+    ui->pushButton_dir->setText(direction?QStringLiteral("▶"):QStringLiteral("◀"));
 }
 
 auto MainWindow::GetPicLabelIndex(QWidget* w) -> int
@@ -87,7 +97,19 @@ void MainWindow::on_click(QWidget* w, QMouseEvent* e)
     if (e->type() == QEvent::MouseButtonPress) onMouseButtonPress(w, e);
 }
 
+void MainWindow::on_move(QWidget* w, QMouseEvent* e)
+{
+    if (e->type() == QEvent::MouseMove) onMouseMove(w,e);
+    if (e->type() == QEvent::Leave) onMouseLeave(w,e);
+    if (e->type() == QEvent::Enter) onMouseEnter(w,e);
+}
+
+
 void MainWindow::on_timeout(){
+    if(isRestartOnNext_on_timeout){
+        isRestartOnNext_on_timeout=false;
+        on_pushButton_rew_clicked();
+    }
     if(direction) on_pushButton_next_clicked();  //NOLINT
     else on_pushButton_prev_clicked(); //NOLINT
 }
@@ -114,29 +136,41 @@ void MainWindow::on_pushButton_next_clicked()
 {
     CamPlayer::ShowFrameR m = CamPlayer::NextFrame();
     setUi_TrackingColor(m);
+    if (!m.hasNext && timer.isActive()) {
+        if(ui->pushButton_cycle->isChecked()){
+            isRestartOnNext_on_timeout=true;
+        } else on_pushButton_stop_clicked();
+    }
+    else isRestartOnNext_on_timeout=false;
 }
 
 void MainWindow::on_pushButton_prev_clicked()
 {
     CamPlayer::ShowFrameR m = CamPlayer::PrevFrame();
     setUi_TrackingColor(m);
+    if(!m.hasPrev && timer.isActive()){
+        on_pushButton_stop_clicked();
+    }
 }
 
 
-void MainWindow::on_pushButton_start_clicked()
-{
-    timer.start();
-}
+//void MainWindow::on_pushButton_start_clicked()
+//{
+//    timer.start();
+//}
 
 void MainWindow::on_pushButton_start_clicked(bool checked)
 {
-    if(checked){
+    if (timer.isActive()){//(!checked) {
+        on_pushButton_stop_clicked();
+//        timer.stop();
+//        ui->pushButton_start->setText(QStringLiteral("▶"));
+//        ui->pushButton_start->setChecked(false);
+
+    } else {
         timer.start();
         ui->pushButton_start->setText(QStringLiteral("⏸"));
-    }
-    else{
-        timer.stop();
-        ui->pushButton_start->setText(QStringLiteral("▶"));
+        ui->pushButton_start->setChecked(true);
     }
 }
 
@@ -145,6 +179,7 @@ void MainWindow::on_pushButton_stop_clicked()
 {
     timer.stop();
     ui->pushButton_start->setText(QStringLiteral("▶"));
+    ui->pushButton_start->setChecked(false);
 }
 
 void MainWindow::on_pushButton_rew_clicked()
@@ -155,7 +190,7 @@ void MainWindow::on_pushButton_rew_clicked()
 
 void MainWindow::on_pushButton_loadfcs_clicked()
 {
-    CamPlayer::LoadFcsR m = CamPlayer::LoadFcs();
+    CamPlayer::LoadFcsR m = CamPlayer::LoadFcs(this);
     setUi_TrackingColor(m);
 
     RefreshUnfcs();
@@ -258,6 +293,7 @@ void MainWindow::setUi_TrackingColor(const CamPlayer::SettingsR& m)
 
 void MainWindow::setUi_TrackingColor(const CamPlayer::LoadR& m)
 {
+    if(m.isCanceled) return;
     ui->label_examId->setText(m.folderName);
 }
 
@@ -387,6 +423,7 @@ void MainWindow::setUi_TrackingColor(const CamPlayer::ShowFrameR& m)
 
 void MainWindow::setUi_TrackingColor(const CamPlayer::LoadFcsR& m)
 {
+    if(m.isCanceled) return;
     ui->label_fcs->setText(m.folderName+':'+QString::number(m.fcs_count)+','+QString::number(m.unfcs_count));
     RefreshUnfcs();
 }
@@ -446,14 +483,14 @@ void MainWindow::onMouseButtonPress(QWidget* w, QMouseEvent * event)
             txt+= " ("+color_str+") "+color_hexstr;
 
             int ballIx = CamPlayer::GetBallIx(vix, -1, x, y, -1);
-            int color_ix;
-            if(ballIx!=-1){
+            int color_ix = -1;
+            if(ballIx!=-1 && !ui->pushButton_fc_lock->isChecked()){
                 color_ix = CamPlayer::GetColorIx(color);
                 // majd a colorwheel alapján szerzünk hozzá egy szabványos nevet
                 //QString colorname = FriendlyRGB::GetName(color_ix);//CamPlayer::GetColorName(color);
                 //if(!colorname.isEmpty()) txt+=' '+colorname;
                 ui->listWidget_col_names->setCurrentRow(color_ix);
-            }else color_ix=-1;
+            }
 
             //int ballIx = CamPlayer::GetBallIx(vix, -1, x, y, -1);
             //if(ballIx==-1)color_ix=-1; //nincs ball, előző szín marad
@@ -471,10 +508,18 @@ void MainWindow::onMouseButtonPress(QWidget* w, QMouseEvent * event)
             int zix = GetZoomLabelIndex(w);
             if(zix!=-1){
                 QColor c;
+                ZoomBitmapData z;
                 if(zix==1) {
-                    c = pixmap.copy(p.x(),p.y(), 1,1).toImage().pixel(0,0);
+                    c = _original_zoom.pixmap.copy(p.x(),p.y(), 1,1).toImage().pixel(0,0);
+                    //pxm = _original_zoom.pixmap.copy();
+                    z = _original_zoom;
+
                 }
-                if(zix==2) c = CamPlayer::GetTrackingColor(p, l->size());
+                if(zix==2){
+                    c = CamPlayer::GetTrackingColor(p, l->size());
+//                    pxm = _original_filtered.pixmap.copy();
+                    z = _original_filtered;
+                }
                 if(c.isValid())
                 {
                     int color_ix = CamPlayer::GetColorIx(c);
@@ -512,6 +557,19 @@ void MainWindow::onMouseButtonPress(QWidget* w, QMouseEvent * event)
                     ButtonEnable(ui->pushButton_fcs_extra_del, !items2.isEmpty());
                     ui->listWidget_fcs_extra->clearSelection();
                     for(auto&item:items2) item->setSelected(true);
+                    }               
+
+//                    auto tsize = CamPlayer::trackingdata_image_size();
+//                    int rx = pxm.width()/tsize.width();
+//                    int ry = pxm.height()/tsize.height();
+//                    QPainter painter(&pxm);
+//                    painter.setPen(Qt::darkCyan);
+//                    painter.drawRect((p.x()/rx)*rx-1, (p.y()/ry)*ry-1, rx+1, ry+1);
+//                    l->setPixmap(pxm);
+                    if(z.isValid){
+                        QPixmap pxm = z.pixmap.copy();
+                        DrawMarker(&pxm, p, z.size);
+                        l->setPixmap(pxm);
                     }
                 }
             }
@@ -519,6 +577,73 @@ void MainWindow::onMouseButtonPress(QWidget* w, QMouseEvent * event)
     }
 
     ui->label_msg->setText(txt);
+}
+
+void MainWindow::onMouseMove(QWidget* w, QMouseEvent * event){
+    auto p = event->pos();
+    auto l = reinterpret_cast<QLabel*>(w); //NOLINT
+
+    int vix = GetPicLabelIndex(w);
+    if(vix==-1){
+        int zix = GetZoomLabelIndex(w);
+        if(zix!=-1){
+            ZoomBitmapData z;
+
+            if (zix==1) {z = _original_zoom;
+            } else if (zix==2) {z = _original_filtered;
+            }
+            if(z.isValid){
+                l->setCursor(Qt::BlankCursor);
+                QPixmap pxm = z.pixmap.copy();
+                DrawMarker(&pxm, p, z.size);
+                l->setPixmap(pxm);
+            } else {
+                l->setCursor(Qt::ArrowCursor);
+            }
+
+        }
+    }
+}
+
+void MainWindow::onMouseLeave(QWidget *w, QMouseEvent *event){
+    Q_UNUSED(event)
+    auto l = reinterpret_cast<QLabel*>(w); //NOLINT
+    //l->setCursor(Qt::ArrowCursor);
+    int vix = GetPicLabelIndex(w);
+    if(vix==-1){
+        int zix = GetZoomLabelIndex(w);
+        if(zix!=-1){
+            ZoomBitmapData z;
+
+            if (zix==1) {z = _original_zoom;
+            } else if (zix==2) {z = _original_filtered;
+            }
+            l->setPixmap(z.pixmap.copy());
+        }
+    }
+}
+
+void MainWindow::onMouseEnter(QWidget *w, QMouseEvent *event){
+    Q_UNUSED(event)
+    auto l = reinterpret_cast<QLabel*>(w); //NOLINT
+    l->setCursor(Qt::ArrowCursor);
+}
+
+void MainWindow::DrawMarker(QPixmap* pxm, const QPoint& p, const QSize& tsize){ //NOLINT
+    if(!pxm) return;
+    if(pxm->isNull()) return;            
+    if(tsize.width()==0 || tsize.height()==0) return;
+    double rx = (double)pxm->width()/tsize.width();//NOLINT
+    double ry = (double)pxm->height()/tsize.height();//NOLINT
+    QPainter painter(pxm);
+    painter.setPen(Qt::cyan);
+    int x0 = p.x()/rx;
+    int y0 = p.y()/ry;
+    double x = x0*rx;
+    double y = y0*ry;
+    painter.drawRect(x-1, y-1, rx+1, ry+1);
+    painter.drawRect(x-2, y-2, rx+3, ry+3);
+    ui->label_tracking_xy->setText(QStringLiteral("%1,%2").arg(x0).arg(y0));
 }
 
 void MainWindow::ButtonEnable(QPushButton *b, bool s){
@@ -537,21 +662,42 @@ void MainWindow::ButtonEnable(QPushButton *b, bool s){
 }
 
 void MainWindow::setUi_ShowTrackingR(const CamPlayer::ShowTrackingR& m){
-    auto size2 = ui->label_zoom->size();
+    auto size2 = ui->label_zoom->size();    
     if(m.image.isNull()){
         ui->label_zoom->clear();
+        _original_zoom.isValid = false;
     }
     else{
         auto pixmap_zoom = QPixmap::fromImage(m.image).scaled(size2,Qt::KeepAspectRatio, Qt::TransformationMode::FastTransformation);
         ui->label_zoom->setPixmap(pixmap_zoom);
+        _original_zoom.pixmap = pixmap_zoom;
+        _original_zoom.size = m.image.size();
+        _original_zoom.isValid = true;
     }
 
     auto size3 = ui->label_zoom_2->size();
-    if(m.image_filtered.isNull()){
+    if(m.image_filtered.isNull()){        
         ui->label_zoom_2->clear();
+        _original_filtered.isValid = false;
+        //set label zoom
+        QString msg;
+        if(m.fcs_count==0) { msg +=  QStringLiteral("No colors loaded");
+        }
+        else{ msg+= QStringLiteral("No tracking data");
+        }
+        ui->label_zoom_2->setText(msg);
     }else{
-        auto pixmap_filtered = QPixmap::fromImage(m.image_filtered).scaled(size3,Qt::KeepAspectRatio, Qt::TransformationMode::FastTransformation);
+        auto pixmap_filtered = QPixmap::fromImage(m.image_filtered).scaled(size3,Qt::KeepAspectRatio, Qt::TransformationMode::FastTransformation);     
         ui->label_zoom_2->setPixmap(pixmap_filtered);
+        _original_filtered.pixmap=pixmap_filtered;
+        _original_filtered.size = m.image_filtered.size();
+        _original_filtered.isValid = true;
+    }
+
+    if(m.fpixel_count>0 && ui->radioButton_t1->isChecked()){
+        on_pushButton_start_clicked(!timer.isActive());
+    } else if (m.fpixel_count==0 && ui->radioButton_t2->isChecked()) {
+        on_pushButton_start_clicked(!timer.isActive());
     }
 }
 
@@ -594,5 +740,32 @@ void MainWindow::on_listWidget_unfcs_itemClicked(QListWidgetItem *item)
 
     ui->listWidget_fcs_extra->clearSelection();
     for(auto&item:items) item->setSelected(true);
+}
+
+void MainWindow::on_listWidget_col_names_currentRowChanged(int color_ix)
+{
+    auto trackingR = CamPlayer::SetTrackingFcix(color_ix);
+    QString tracking_txt = CamPlayer::ShowTrackingTxt();
+    RefreshZoom();
+    ui->label_tracking->setText(tracking_txt);
+    if(trackingR.fcix_changed) RefreshUnfcs();
+}
+
+
+void MainWindow::on_pushButton_clicked()
+{
+    ui->spinBox_timer->setValue(ui->spinBox_timer->minimum());
+}
+
+
+void MainWindow::on_pushButton_3_clicked()
+{
+    ui->spinBox_timer->setValue(ui->spinBox_timer->maximum());
+}
+
+
+void MainWindow::on_pushButton_2_clicked()
+{
+    ui->spinBox_timer->setValue(16);
 }
 

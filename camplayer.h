@@ -52,7 +52,7 @@ public:
         }
 
         QSet<int> ffcs;
-        //QSet<int> fcs;
+        //QSet<int> fcs;                
     };
     static TrackingData trackingdata;
 
@@ -135,7 +135,7 @@ public:
     struct LoadR
     {
         QString folderName;
-
+        bool isCanceled;
     };
     static LoadR Load(QWidget*);
 
@@ -158,8 +158,8 @@ public:
         const FrameData* framedata3;
         const FrameData* framedata4;
         int frameix;
-
-
+        bool hasNext;
+        bool hasPrev;
     };
 
     static VideoData* GetVideoData(int ix);
@@ -187,15 +187,16 @@ public:
     static QImage GetImage(int videoix, int fix, int x, int y, int r);
     static QImage GetImage(VideoData* videodata, int fix, int x, int y, int r);
 
-    static QImage Filter(const QImage&, int fcsix, FilterMode);
+    static QImage Filter(const QImage&, int fcsix, FilterMode, int *count);
 
     struct LoadFcsR{
         QString folderName;
         int fcs_count;
         int unfcs_count;
+        bool isCanceled;
     };
 
-    static LoadFcsR LoadFcs();
+    static LoadFcsR LoadFcs(QWidget *parent);
     static bool LoadFcs2(const QString&, int i);
     static bool LoadUnfcs2(const QString&, int i);
 
@@ -221,6 +222,10 @@ public:
     struct ShowTrackingR{
         QImage image;
         QImage image_filtered;
+        int fcs_count;
+        //int x;
+        //int y;
+        int fpixel_count;
     };
 
     static ShowTrackingR ShowTracking();
@@ -279,6 +284,8 @@ public:
     };
 
     static DelFcsExtraR DelFcsExtra(const QString& txt);
+    static SetTrackingR SetTrackingFcix(int fcix);
+    //static QSize trackingdata_image_size();
 };
 
 #endif // CAMPLAYER_H
