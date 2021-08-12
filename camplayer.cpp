@@ -514,7 +514,10 @@ auto CamPlayer::GetFrameData(VideoData* videodata, int ix) -> CamPlayer::FrameDa
 {
     if(videodata!=nullptr &&
         ix>=0 && ix<=videodata->maxframeix &&
-        videodata->frames.contains(ix)) return &(videodata->frames[ix]);
+        videodata->frames.contains(ix)){
+
+        return &(videodata->frames[ix]);
+    }
     return nullptr;
 }
 
