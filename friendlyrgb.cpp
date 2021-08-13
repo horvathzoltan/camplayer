@@ -20,7 +20,7 @@ const FriendlyRGB FriendlyRGB::RYB_BG = FriendlyRGB(QStringLiteral("347C98"));
 const FriendlyRGB FriendlyRGB::RYB_BP = FriendlyRGB(QStringLiteral("4424D6"));
 const FriendlyRGB FriendlyRGB::RYB_RP = FriendlyRGB(QStringLiteral("C21460"));
 
-const FriendlyRGB FriendlyRGB::WheelColorsRYB[] = {
+const FriendlyRGB FriendlyRGB::WheelColorsRYB[] = { //NOLINT
     //0     1         2
     RYB_RED,RYB_GREEN,RYB_BLUE
     //3         4          5
@@ -29,13 +29,13 @@ const FriendlyRGB FriendlyRGB::WheelColorsRYB[] = {
     ,RYB_RO,RYB_YO,RYB_YG,RYB_BG,RYB_BP,RYB_RP
 };
 
-const QString FriendlyRGB::WheelColorsRYBNames[] = {
+const QString FriendlyRGB::WheelColorsRYBNames[] = { //NOLINT
     "RYB_RED","RYB_GREEN","RYB_BLUE",
     "RYB_YELLOW","RYB_ORANGE","RYB_PURPLE",
     "RYB_RO","RYB_YO","RYB_YG","RYB_BG","RYB_BP","RYB_RP"
 };
 
-const QString FriendlyRGB::WheelColorsRYBHumNames[] = {
+const QString FriendlyRGB::WheelColorsRYBHumNames[] = { //NOLINT
     "Red","Green","Blue",
     "Yellow","Orange","Purple",
     "Vermillion","Amber","Chartreuse","Teal","Violet","Magenta"
@@ -112,16 +112,16 @@ auto FriendlyRGB::FromInt(int i) -> FriendlyRGB
     return {r, g, b};
 }
 
-FriendlyRGB FriendlyRGB::FromFriendlyInt(int i)
+auto FriendlyRGB::FromFriendlyInt(int i) -> FriendlyRGB
 {
     auto b = static_cast<byte>(i << 4);
     auto g = static_cast<byte>(i >> 4);
     auto r = static_cast<byte>(i >>12);
 
-    return FriendlyRGB(r, g, b);
+    return {r, g, b};
 }
 
-int FriendlyRGB::ToFriendlyInt(byte r, byte g, byte b){
+auto FriendlyRGB::ToFriendlyInt(byte r, byte g, byte b) -> int{
     return ToFriendlyInt(r<<16 | g<<8 | b);
 }
 
@@ -132,16 +132,9 @@ auto FriendlyRGB::ToFriendlyInt(int i) -> int{
 auto FriendlyRGB::GetName(int i) -> QString
 {
     if(i<0) return QLatin1String("");
-    if(i>FriendlyRGB::WheelColorsRYBLen) return "";
-    return FriendlyRGB::WheelColorsRYBHumNames[i];
+    if(i>FriendlyRGB::WheelColorsRYBLen) return QLatin1String("");
+    return FriendlyRGB::WheelColorsRYBHumNames[i]; //NOLINT
 }
-
-//auto FriendlyRGB::GetFirstN(int n) ->QList<FriendlyRGB>
-//{
-//    if(n)
-//    QList<FriendlyRGB> e;
-//    for(int)
-//}
 
 auto FriendlyRGB::GetRYBIxWheelN(byte r, byte g, byte b, double* d_min, int n) -> int
 {
@@ -161,12 +154,6 @@ auto FriendlyRGB::GetRYBIxWheelN(byte r, byte g, byte b, double* d_min, int n) -
 
         GeoMath::uIranyszogXY(0,0,lab_c.a, lab_c.b, &a, &t);
         alphas[i]=a; // NOLINT
-
-        //auto ar = qRadiansToDegrees(a);
-
-        //        zInfo(QStringLiteral("%1(%5): a:%2, b:%3 - a:%4")
-        //                  .arg(i).arg(lab_c.a).arg(lab_c.b).arg(ar)
-        //                  .arg(FriendlyRGB::WheelColorsRYBNames[i]));
     }
 
     //bool isSimple=false;
@@ -262,13 +249,13 @@ auto FriendlyRGB::toLab(byte sR, byte sG, byte sB) -> CIEDE2000::LAB
 QString FriendlyRGB::GetFileName(const QString& name, int i)
 {
     if(i<0) return QLatin1String("");
-    if(i>FriendlyRGB::WheelColorsRYBLen) return "";
+    if(i>FriendlyRGB::WheelColorsRYBLen) return QLatin1String("");
     return name+'_'+QString::number(i)+'_'+FriendlyRGB::WheelColorsRYBNames[i]+".txt";
 }
 
-QString FriendlyRGB::GetFileNameFilter(const QString& name, int i)
+auto FriendlyRGB::GetFileNameFilter(const QString& name, int i) -> QString
 {
     if(i<0) return QLatin1String("");
-    if(i>FriendlyRGB::WheelColorsRYBLen) return "";
+    if(i>FriendlyRGB::WheelColorsRYBLen) return QLatin1String("");
     return name+'_'+QString::number(i)+'_'+FriendlyRGB::WheelColorsRYBNames[i]+"*.txt";
 }

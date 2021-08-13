@@ -620,31 +620,23 @@ auto CamPlayer::Filter(const QImage &image, int fcsix, CamPlayer::FilterMode mod
 
 auto CamPlayer::FilterStat(const QImage & img) -> CamPlayer::FilterStatR
 {
-    int w = img.width();
-    FilterStatR r;
-
+    FilterStatR r(img.size());
     r.pix_count=0;
     const QRgb *st = reinterpret_cast<const QRgb *>(img.bits()); // NOLINT
-    quint64 pixelCount = img.width() * img.height();
     const QRgb *pixel = st;
-
-    int w2 = w/r.w;
-    int h2 = img.height()/r.w;
-    int l = w2*h2;
-    r.p.resize(l);//= QVarLengthArray<bool>(l);//pixelCount/(r.w*r.w));
-    for(auto& i:r.p) i=false;
-
-    int ix;
+    r.p.resize(r.fix.length());
+    for(auto& i:r.p) i=0;
+    quint64 pixelCount = r.fix.pixelcount();
     for (quint64 p = 0; p < pixelCount; p++) {
         if (*pixel) {
             r.pix_count++;
-            ix = ((p/w)/r.w)*w2+((p%w)/r.w);
-            r.p[ix]=true;
+            r.p[r.fix.ix(p)]++;
         }
         pixel++; // NOLINT
     }
     return r;
 }
+
 /*
 //y = p/w;
 //x = p%w;
@@ -660,20 +652,34 @@ auto CamPlayer::FilterStat(const QImage & img) -> CamPlayer::FilterStatR
 void CamPlayer::DrawFilterStat(QImage* img, const FilterStatR& r)
 {
     if(!img) return;
-    int w = img->width();
     QRgb *st = reinterpret_cast<QRgb *>(img->bits()); // NOLINT
-    quint64 pixelCount = w * img->height();
     QRgb *pixel = st;
 
-    int ix;
-    int w2 = w/r.w;
+    quint64 pixelCount = r.fix.pixelcount();
     for (quint64 p = 0; p < pixelCount; p++) {
-        ix = ((p/w)/r.w)*w2+((p%w)/r.w);
-        if (!r.p[ix]) *pixel = 0x6e6e6d;
+        if (!r.p[r.fix.ix(p)]) *pixel = 0x6e6e6d;
         pixel++; // NOLINT
     }
 }
 
+void CamPlayer::DrawFilterStat2(QImage* img, const FilterStatR& r)
+{
+    if(!img) return;
+    QPainter painter(img);
+    QBrush br(Qt::cyan);
+    QPen pen(br, 1);
+    painter.setPen(pen);
+
+    int w = r.fix.rw;
+    for(int y=0;y<r.fix.h2;y++){
+        for(int x=0;x<r.fix.w2;x++){
+            if (r.get(x,y)>0) {
+                painter.drawRect(x*w,y*w,w-1,w-1);
+            }
+        }
+    }
+    painter.end();
+}
 
 auto CamPlayer::toHexString(const QColor & pix) -> QString
 {
@@ -912,6 +918,8 @@ void CamPlayer::DrawMetaData(QPainter& painter, const FrameMetaData&m, QSize siz
         painter.drawLine(x, y-tr, x, y+tr);
         painter.drawLine(x-tr, y, x+tr, y);
     }
+
+    painter.end();
 }
 
 

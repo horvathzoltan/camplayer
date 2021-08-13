@@ -425,7 +425,11 @@ auto MainWindow::DrawFrame(const CamPlayer::FrameData* framedata, CamPlayer::Fil
 
     if (filterMode!=CamPlayer::Copy) {
         CamPlayer::FilterStatR filterstat = CamPlayer::FilterStat(filtered_image);
-        CamPlayer::DrawFilterStat(&filtered_image, filterstat);
+        if(filterstat.pix_count>0)
+        {
+            CamPlayer::DrawFilterStat2(&filtered_image, filterstat);
+            //CamPlayer::CheckFiltered(filterstat, ignoretab);
+        }
     }
 
     auto p = QPixmap::fromImage(filtered_image);

@@ -190,11 +190,35 @@ public:
 
     static QImage Filter(const QImage&, int fcsix, FilterMode, int *count);
 
+    struct FilterIx{
+        int w, h;
+        int rw;
+        int w2;
+        int h2;
+        FilterIx(QSize s, int _rw)
+        {
+            h = s.height();
+            w = s.width();
+            rw = _rw;
+            w2 = w/rw;
+            h2 = h/rw;
+        }
+        int ix(int p) const {return ((p/w)/rw)*w2+((p%w)/rw);}
+        int length(){return w2*h2;}
+        quint64 pixelcount() const {return w*h;}
+        int ix(int x, int y) const {return y*w2+x;}
+    };
+
     struct FilterStatR{
+        FilterStatR(QSize s) : fix{s, w} {}
         int pix_count;
         int w = 40;
-        //QSet<QPair<int,int>> map;
-        QVarLengthArray<bool> p;
+        FilterIx fix;
+        QVarLengthArray<int> p;
+        int get(int x, int y) const
+        {
+            return p[fix.ix(x,y)];
+        }
     };
 
     static FilterStatR FilterStat(const QImage&);
@@ -233,8 +257,6 @@ public:
         QImage image;
         QImage image_filtered;
         int fcs_count;
-        //int x;
-        //int y;
         int fpixel_count;
     };
 
@@ -298,6 +320,10 @@ public:
     //static QSize trackingdata_image_size();
     static void DeleteTracking();
     static void DrawFilterStat(QImage *img, const FilterStatR &r);
+    static void DrawFilterStat2(QImage *img, const FilterStatR &r);
+    static int filterIx();
+
+
 };
 
 #endif // CAMPLAYER_H
