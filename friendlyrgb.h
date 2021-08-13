@@ -44,6 +44,7 @@ public:
 
     static FriendlyRGB FromInt(int i);
     static QString GetName(int i);
+    //static QList<FriendlyRGB> GetFirstN(int n);
     static int GetRYBIxWheelN(byte r, byte g, byte b, qreal* d_min, int n);
     static CIEDE2000::LAB toLab(byte sR, byte sG, byte sB);
     static QString GetFileName(const QString &name, int i);

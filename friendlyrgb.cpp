@@ -136,6 +136,13 @@ auto FriendlyRGB::GetName(int i) -> QString
     return FriendlyRGB::WheelColorsRYBHumNames[i];
 }
 
+//auto FriendlyRGB::GetFirstN(int n) ->QList<FriendlyRGB>
+//{
+//    if(n)
+//    QList<FriendlyRGB> e;
+//    for(int)
+//}
+
 auto FriendlyRGB::GetRYBIxWheelN(byte r, byte g, byte b, double* d_min, int n) -> int
 {
     if(n>FriendlyRGB::WheelColorsRYBLen) n = FriendlyRGB::WheelColorsRYBLen;
@@ -196,7 +203,7 @@ auto FriendlyRGB::GetRYBIxWheelN(byte r, byte g, byte b, double* d_min, int n) -
 
 //https://www.easyrgb.com/en/math.php
 //https://www.colourphil.co.uk/lab_lch_colour_space.shtml
-CIEDE2000::LAB FriendlyRGB::toLab(byte sR, byte sG, byte sB)
+auto FriendlyRGB::toLab(byte sR, byte sG, byte sB) -> CIEDE2000::LAB
 {
     //sR, sG and sB (Standard RGB) input range = 0 ÷ 255
     //X, Y and Z output refer to a D65/2° standard illuminant.
@@ -205,18 +212,15 @@ CIEDE2000::LAB FriendlyRGB::toLab(byte sR, byte sG, byte sB)
     auto var_G = sG / 255.;
     auto var_B = sB / 255.;
 
-    if ( var_R > 0.04045 )
+    if ( var_R > 0.04045 ) {
         var_R = qPow((( var_R + 0.055 ) / 1.055 ) , 2.4);
-    else
-        var_R = var_R / 12.92;
-    if ( var_G > 0.04045 )
+    } else var_R = var_R / 12.92;
+    if ( var_G > 0.04045 ){
         var_G = qPow((( var_G + 0.055 ) / 1.055 ) , 2.4);
-    else
-        var_G = var_G / 12.92;
-    if ( var_B > 0.04045 )
-        var_B = qPow((( var_B + 0.055 ) / 1.055 ) , 2.4);
-    else
-        var_B = var_B / 12.92;
+    } else var_G = var_G / 12.92;
+    if ( var_B > 0.04045 ){
+        var_B = qPow((( var_B + 0.055 ) / 1.055 ) , 2.4);        
+    } else var_B = var_B / 12.92;
 
     var_R = var_R * 100.;
     var_G = var_G * 100.;
@@ -237,19 +241,16 @@ CIEDE2000::LAB FriendlyRGB::toLab(byte sR, byte sG, byte sB)
     auto var_Y = Y / Reference_Y;
     auto var_Z = Z / Reference_Z;
 
-    if ( var_X > 0.008856 )
+    if ( var_X > 0.008856 ) {
         var_X = qPow(var_X , ( 1./3 ));
-    else
-        var_X = ( 7.787 * var_X ) + ( 16. / 116 );
-    if ( var_Y > 0.008856 )
+    } else var_X = ( 7.787 * var_X ) + ( 16. / 116 );
+    if ( var_Y > 0.008856 ) {
         var_Y = qPow(var_Y , ( 1./3 ));
-    else
-        var_Y = ( 7.787 * var_Y ) + ( 16. / 116 );
+    } else var_Y = ( 7.787 * var_Y ) + ( 16. / 116 );
 
-    if ( var_Z > 0.008856 )
+    if ( var_Z > 0.008856 ) {
         var_Z = qPow(var_Z , ( 1./3 ));
-    else
-        var_Z = ( 7.787 * var_Z ) + ( 16. / 116 );
+    } else var_Z = ( 7.787 * var_Z ) + ( 16. / 116 );
 
     auto L = ( 116 * var_Y ) - 16;
     auto a = 500 * ( var_X - var_Y );

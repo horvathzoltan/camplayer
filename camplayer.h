@@ -116,6 +116,7 @@ public:
         bool balls[BALL_LENGTH];
         FrameMetaData metadata;
         int videoix;
+        //int pixel_counter;//filtered
     };
 
     struct VideoData{
@@ -188,6 +189,15 @@ public:
     static QImage GetImage(VideoData* videodata, int fix, int x, int y, int r);
 
     static QImage Filter(const QImage&, int fcsix, FilterMode, int *count);
+
+    struct FilterStatR{
+        int pix_count;
+        int w = 40;
+        //QSet<QPair<int,int>> map;
+        QVarLengthArray<bool> p;
+    };
+
+    static FilterStatR FilterStat(const QImage&);
 
     struct LoadFcsR{
         QString folderName;
@@ -286,6 +296,8 @@ public:
     static DelFcsExtraR DelFcsExtra(const QString& txt);
     static SetTrackingR SetTrackingFcix(int fcix);
     //static QSize trackingdata_image_size();
+    static void DeleteTracking();
+    static void DrawFilterStat(QImage *img, const FilterStatR &r);
 };
 
 #endif // CAMPLAYER_H

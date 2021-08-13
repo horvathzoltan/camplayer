@@ -9,6 +9,7 @@
 #include <QLabel>
 #include <QRadioButton>
 #include "camplayer.h"
+#include <QCheckBox>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -26,14 +27,26 @@ private:
 
     struct VideoBitmapData{
     private:
-        QLabel *_label;
+        QLabel *_label=nullptr;
+        QLabel *_label_pix=nullptr;
+        QRadioButton *_t1 = nullptr;
     public:
-        QImage image;
-        const CamPlayer::FrameData* framedata;
+        const CamPlayer::FrameData* framedata = nullptr;
         CamPlayer::FilterMode filterMode = CamPlayer::FilterMode::Copy;
+        int pixel_counter;
 
-        void setLabel(QLabel*l){_label=l;}
-        QLabel* label(){return _label;}
+        QLabel* label()const{return _label;}
+        QLabel* label_pix()const{return _label_pix;}
+        bool isT1() const {
+            if(!_t1) return false;
+            return _t1->isChecked();
+        }
+        void init(QLabel*l, QLabel* lpx, QRadioButton*r){
+            _label=l;
+            _t1=r;
+            _label_pix=lpx;
+        };
+
     };
 
 public:
@@ -74,18 +87,23 @@ public:
     void RefreshPlayLabel();
     void RefreshUnfcs();
     void RefreshZoom();
+    void RefreshFrames();
 
-    QPixmap DrawFrame(const CamPlayer::FrameData* framedata, CamPlayer::FilterMode filterMode);
+    QPixmap DrawFrame(const CamPlayer::FrameData* framedata,
+                      CamPlayer::FilterMode filterMode,
+                      int* pixel_counter);
     void setUi_FilterMode(CamPlayer::FilterMode mode);
     void setUi_FilterMode1(CamPlayer::FilterMode mode);
     void setUi_FilterMode2(CamPlayer::FilterMode mode);
     void setUi_FilterMode3(CamPlayer::FilterMode mode);
     void setUi_FilterMode4(CamPlayer::FilterMode mode);
+    void setUi_VideoBitmapData(VideoBitmapData& v);
+    static void CopyIconMirrored(QAbstractButton *dst, QAbstractButton *src);
+    void setUi_ListWidgetFcNames(int n);
 private slots:
     void on_pushButton_load_clicked();
     void on_pushButton_next_clicked();
-    void on_pushButton_prev_clicked();
-    //void on_pushButton_start_clicked();
+    void on_pushButton_prev_clicked();    
     void on_pushButton_stop_clicked();
     void on_pushButton_rew_clicked();
     void on_pushButton_loadfcs_clicked();
@@ -97,7 +115,7 @@ private slots:
     void on_pushButton_savefcs_clicked();
     void on_pushButton_unfc_del_clicked();
     void on_spinBox_timer_valueChanged(int arg1);
-    void on_pushButton_start_clicked(bool checked);
+    void on_pushButton_play_clicked(bool checked);
     void on_pushButton_fcs_extra_add_clicked();
     void on_pushButton_fcs_extra_del_clicked();
     void on_listWidget_fcs_extra_itemClicked(QListWidgetItem *item);
@@ -108,28 +126,21 @@ private slots:
     void on_pushButton_2_clicked();
 
     void on_radioButton_copy_1_clicked();
-
     void on_radioButton_allfriendly_1_clicked();
-
     void on_radioButton_isfriendly_1_clicked();
-
     void on_radioButton_copy_2_clicked();
-
     void on_radioButton_allfriendly_2_clicked();
-
     void on_radioButton_isfriendly_2_clicked();
-
     void on_radioButton_copy_3_clicked();
-
     void on_radioButton_allfriendly_3_clicked();
-
     void on_radioButton_isfriendly_3_clicked();
-
     void on_radioButton_copy_4_clicked();
-
     void on_radioButton_allfriendly_4_clicked();
-
     void on_radioButton_isfriendly_4_clicked();
+
+    void on_pushButton_4_clicked();
+
+    void on_pushButton_ffwd_clicked();
 
 private:
     int _timer_step=16;
@@ -144,10 +155,13 @@ private:
     VideoBitmapData _frame_3;
     VideoBitmapData _frame_4;
 
-    bool _isRestartOnNextTimeout;
+    //bool _isRestartOnNextTimeout;
     bool _direction = true;
 
-    void setUi_ShowFrame(const CamPlayer::FrameData* framedata, CamPlayer::FilterMode filterMode, QLabel *label);
+    bool _hasNext;
+    bool _hasPrev;
+
+    //void setUi_ShowFrame(const CamPlayer::FrameData* framedata, CamPlayer::FilterMode filterMode, QLabel *label);
     void setUi_FilterMode2(CamPlayer::FilterMode mode, QRadioButton *c, QRadioButton *f, QRadioButton *a);
 
     void setFilterMode(VideoBitmapData *frame, CamPlayer::FilterMode mode);

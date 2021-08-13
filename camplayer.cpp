@@ -7,6 +7,7 @@
 #include <QFontMetrics>
 #include <QPainter>
 #include <QRegularExpression>
+#include <QVarLengthArray>
 #include <QtMath>
 
 extern Settings settings;
@@ -242,6 +243,9 @@ auto CamPlayer::SetTrackingFcix(int fcix)->SetTrackingR
 //{
 //    return trackingdata.image.size();
 //}
+void CamPlayer::DeleteTracking(){
+    trackingdata.vix = trackingdata.bix = trackingdata.x = trackingdata.y = -1;
+}
 
 auto CamPlayer::SetTracking(int vix, int fix, int bix, int fcix, int x, int y)->SetTrackingR
 {
@@ -613,6 +617,63 @@ auto CamPlayer::Filter(const QImage &image, int fcsix, CamPlayer::FilterMode mod
     }
     return img;
 }
+
+auto CamPlayer::FilterStat(const QImage & img) -> CamPlayer::FilterStatR
+{
+    int w = img.width();
+    FilterStatR r;
+
+    r.pix_count=0;
+    const QRgb *st = reinterpret_cast<const QRgb *>(img.bits()); // NOLINT
+    quint64 pixelCount = img.width() * img.height();
+    const QRgb *pixel = st;
+
+    int w2 = w/r.w;
+    int h2 = img.height()/r.w;
+    int l = w2*h2;
+    r.p.resize(l);//= QVarLengthArray<bool>(l);//pixelCount/(r.w*r.w));
+    for(auto& i:r.p) i=false;
+
+    int ix;
+    for (quint64 p = 0; p < pixelCount; p++) {
+        if (*pixel) {
+            r.pix_count++;
+            ix = ((p/w)/r.w)*w2+((p%w)/r.w);
+            r.p[ix]=true;
+        }
+        pixel++; // NOLINT
+    }
+    return r;
+}
+/*
+//y = p/w;
+//x = p%w;
+
+//xx = x/r.w;
+//yy = y/r.w;
+//ix = yy*w2+xx;
+//r.map.insert({ x/r.w, y/r.w});
+
+//ix = (((p*w2)/w)+p%w)/r.w;
+
+*/
+void CamPlayer::DrawFilterStat(QImage* img, const FilterStatR& r)
+{
+    if(!img) return;
+    int w = img->width();
+    QRgb *st = reinterpret_cast<QRgb *>(img->bits()); // NOLINT
+    quint64 pixelCount = w * img->height();
+    QRgb *pixel = st;
+
+    int ix;
+    int w2 = w/r.w;
+    for (quint64 p = 0; p < pixelCount; p++) {
+        ix = ((p/w)/r.w)*w2+((p%w)/r.w);
+        if (!r.p[ix]) *pixel = 0x6e6e6d;
+        pixel++; // NOLINT
+    }
+}
+
 
 auto CamPlayer::toHexString(const QColor & pix) -> QString
 {
