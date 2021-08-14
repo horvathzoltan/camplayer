@@ -45,14 +45,35 @@ public:
 
         QString toString(){
             QString tracking_txt = QString::number(vix);
-            tracking_txt+=' '+((bix>-1)?QString::number(bix):QStringLiteral("?"));
+            tracking_txt+=' '
+                +((bix>-1)
+                       ?QString::number(bix)
+                       :QStringLiteral("?"));
             tracking_txt += ' '+QString::number(fcix);
             if(isValid()) tracking_txt+=(bix!=-1)?'*':'+';
             return tracking_txt;
         }
 
         QSet<int> ffcs;
-        //QSet<int> fcs;                
+        //QSet<int> fcs;
+
+
+        struct IgnoreData{
+            int vix, fcix, x, y, ix;
+
+            QString toString() {
+                return QString::number(vix)+' '
+                    + QString::number(fcix)+' '
+                    + QString::number(x)+' '
+                    + QString::number(y)+' '
+                    + QString::number(ix);
+            }
+
+            void setIx(int _ix){ ix=_ix;}
+        };
+        IgnoreData ignoreData(){return {vix,fcix,x,y,-1};}
+        QPoint mpoint(){return {x,y};}
+
     };
     static TrackingData trackingdata;
 
@@ -91,12 +112,14 @@ public:
 //        qreal y;//17
         int quality;//18fcsd
         // kalibráció esetén nincs Q mivel azt az interpoláció hozza létre
-        // Q = 0, ha nincs találat, 1 ha van, 2, 3 ha interpolált (lineáris, illetve bezier)
-        // itt a kamerában kell megoldani, hogy get_pic esetén is legyen Q, ami találat esetén 1, interpoláció ugyanúgy nincs -
+        // Q = 0, ha nincs találat, 1 ha van, 2, 3 ha interpolált (lineáris,
+        //illetve bezier) itt a kamerában kell megoldani, hogy get_pic esetén
+        //is legyen Q, ami találat esetén 1, interpoláció ugyanúgy nincs -
         // ha trackelhető és (volt találat vagy ha nem, interpoláció volt)
 
         bool isVisible() const{
-            return is_valid_for_tracking && (found_last_ok > 0 || quality > 0);
+            return is_valid_for_tracking
+                && (found_last_ok > 0 || quality > 0);
         }
     };
 
@@ -148,7 +171,9 @@ public:
 
     static SettingsR Settings();
     static bool LoadExam(const QString&);
-    static bool LoadVideoData(const QString&, const QString&, VideoData&);
+    static bool LoadVideoData(const QString&,
+                              const QString&,
+                              VideoData&);
 
     static int frameix;
     static int maxframeix;
@@ -185,11 +210,23 @@ public:
     //static QString GetColorName(const QColor& color);
 
     static QColor GetColor(int quality);
-    static QImage GetImage(int videoix, int fix, int x, int y, int r);
-    static QImage GetImage(VideoData* videodata, int fix, int x, int y, int r);
+    static QImage GetImage(int videoix,
+                           int fix,
+                           int x,
+                           int y,
+                           int r);
+    static QImage GetImage(VideoData* videodata,
+                           int fix,
+                           int x,
+                           int y,
+                           int r);
 
-    static QImage Filter(const QImage&, int fcsix, FilterMode, int *count);
+    static QImage Filter(const QImage&,
+                         int fcsix,
+                         FilterMode,
+                         int *counter);
 
+    static const int FILTER_W = 40;
     struct FilterIx{
         int w, h;
         int rw;
@@ -203,16 +240,22 @@ public:
             w2 = w/rw;
             h2 = h/rw;
         }
-        int ix(int p) const {return ((p/w)/rw)*w2+((p%w)/rw);}
+        int ix(int _p) const {return ((_p/w)/rw)*w2+((_p%w)/rw);}
         int length(){return w2*h2;}
         quint64 pixelcount() const {return w*h;}
-        int ix(int x, int y) const {return y*w2+x;}
+        int ix(int _x, int _y) const {return _y*w2+_x;}
+        int ix(QPoint _p) const {return ix(_p.x(), _p.y());}
+        QPoint mpoint(QPoint _p){return {_p.x()/rw, _p.y()/rw};}
     };
 
     struct FilterStatR{
-        FilterStatR(QSize s) : fix{s, w} {}
+        FilterStatR(QSize s) : fix{s, w} {
+            pix_count = 0;
+            p.resize(fix.length());
+            for(auto& i:p) i=0;
+        }
         int pix_count;
-        int w = 40;
+        int w = FILTER_W;
         FilterIx fix;
         QVarLengthArray<int> p;
         int get(int x, int y) const
@@ -221,7 +264,8 @@ public:
         }
     };
 
-    static FilterStatR FilterStat(const QImage&);
+    static FilterStatR FilterStat(const QImage&,
+                                  const FilterStatR& ignoretab);
 
     struct LoadFcsR{
         QString folderName;
@@ -243,14 +287,23 @@ public:
     static SaveFcsR SaveUnfcs();
     static bool SaveUnfcs2(const QString&, int i);
 
-    static int GetBallIx(int vix, int fix, double x, double y, double d_max);
+    static int GetBallIx(int vix,
+                         int fix,
+                         double x,
+                         double y,
+                         double d_max);
 
     struct SetTrackingR{
         bool fcix_changed;
         bool isValid;
     };
 
-    static SetTrackingR SetTracking(int vix, int fix, int bix, int fcix, int x, int y);
+    static SetTrackingR SetTracking(int vix,
+                                    int fix,
+                                    int bix,
+                                    int fcix,
+                                    int x,
+                                    int y);
     static void SetTracking(FilterMode mode);
 
     struct ShowTrackingR{
@@ -320,7 +373,10 @@ public:
     //static QSize trackingdata_image_size();
     static void DeleteTracking();
     static void DrawFilterStat(QImage *img, const FilterStatR &r);
-    static void DrawFilterStat2(QImage *img, const FilterStatR &r);
+    static void DrawFilterStat2(QImage *img,
+                                const FilterStatR &r,
+                                const QColor& c,
+                                bool isEnabled);
     static int filterIx();
 
 

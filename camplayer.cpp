@@ -112,7 +112,8 @@ auto CamPlayer::LoadUnfcs2(const QString& folder, int ix)->bool{
 
     //QString fullpath = d.filePath(fn);
 
-    QString fn_filter = FriendlyRGB::GetFileNameFilter(QStringLiteral("ufc"), ix);
+    QString fn_filter = FriendlyRGB::GetFileNameFilter(QStringLiteral("ufc")
+                                                           ,ix);
 
     auto files = d.entryList({fn_filter},QDir::Files);
 
@@ -197,7 +198,11 @@ auto CamPlayer::SaveUnfcs2(const QString& folder, int ix)->bool{
     return true;
 }
 
-auto CamPlayer::GetBallIx(int vix, int fix, double x0, double y0, double d_max)->int
+auto CamPlayer::GetBallIx(int vix,
+                          int fix,
+                          double x0,
+                          double y0,
+                          double d_max) -> int
 {
     if(d_max<=0) d_max=settings.tracking_radius;
     auto videodata = GetVideoData(vix);
@@ -205,7 +210,9 @@ auto CamPlayer::GetBallIx(int vix, int fix, double x0, double y0, double d_max)-
     auto s = QSizeF(framedata->image.size());
     double d_min = std::numeric_limits<double>::max();
     int ix_min=-1;
-    for(auto i = framedata->metadata.balldata.begin();i!=framedata->metadata.balldata.end();i++)
+    for (auto i = framedata->metadata.balldata.begin();
+         i != framedata->metadata.balldata.end();
+         i++ )
     {
         auto b = i.value();
         if(!b.isVisible()) continue;
@@ -247,7 +254,12 @@ void CamPlayer::DeleteTracking(){
     trackingdata.vix = trackingdata.bix = trackingdata.x = trackingdata.y = -1;
 }
 
-auto CamPlayer::SetTracking(int vix, int fix, int bix, int fcix, int x, int y)->SetTrackingR
+auto CamPlayer::SetTracking(int vix,
+                            int fix,
+                            int bix,
+                            int fcix,
+                            int x,
+                            int y) -> SetTrackingR
 {
     SetTrackingR r{};
     trackingdata.vix=vix;
@@ -289,8 +301,12 @@ auto CamPlayer::GetTrackingColor(const QPoint& p, const QSize& s0) -> QColor // 
 void CamPlayer::SetTrackingColor(const QColor& c)
 {
     trackingdata.trackingcolor.color = c;
-    trackingdata.trackingcolor.friendly_int = FriendlyRGB::ToFriendlyInt(c.red(), c.green(), c.blue());
-    trackingdata.trackingcolor.fc = FriendlyRGB::FromFriendlyInt(trackingdata.trackingcolor.friendly_int);
+    trackingdata.trackingcolor.friendly_int = FriendlyRGB::ToFriendlyInt(
+        c.red(),
+        c.green(),
+        c.blue());
+    trackingdata.trackingcolor.fc = FriendlyRGB::FromFriendlyInt(
+        trackingdata.trackingcolor.friendly_int);
 }
 
 auto CamPlayer::GetTrackingColor()->TrackingColor
@@ -425,8 +441,15 @@ auto CamPlayer::ShowTracking() -> CamPlayer::ShowTrackingR
         y = b.y*s.height();
     }
 
-    r.image = CamPlayer::GetImage(videodata, frameix, x, y, settings.tracking_radius);
-    r.image_filtered = CamPlayer::Filter(r.image, trackingdata.fcix, trackingdata.filtermode, &r.fpixel_count);
+    r.image = CamPlayer::GetImage(videodata,
+                                  frameix,
+                                  x,
+                                  y,
+                                  settings.tracking_radius);
+    r.image_filtered = CamPlayer::Filter(r.image,
+                                         trackingdata.fcix,
+                                         trackingdata.filtermode,
+                                         &r.fpixel_count);
     return r;
 }
 
@@ -458,7 +481,9 @@ auto CamPlayer::LoadExam(const QString& path) -> bool
     return ok1&&ok2&&ok3&&ok4;
 }
 
-auto CamPlayer::LoadVideoData(const QString& path, const QString& folder, VideoData& videodata)->bool
+auto CamPlayer::LoadVideoData(const QString& path,
+                              const QString& folder,
+                              VideoData& videodata)->bool
 {
     videodata.frames.clear();
     videodata.maxframeix = -1;
@@ -514,7 +539,8 @@ auto CamPlayer::GetVideoData(int videoix) -> CamPlayer::VideoData *
     }
 }
 
-auto CamPlayer::GetFrameData(VideoData* videodata, int ix) -> CamPlayer::FrameData*
+auto CamPlayer::GetFrameData(VideoData* videodata,
+                             int ix) -> CamPlayer::FrameData*
 {
     if(videodata!=nullptr &&
         ix>=0 && ix<=videodata->maxframeix &&
@@ -568,7 +594,11 @@ auto CamPlayer::GetImage(int videoix, int fix, int x, int y, int r) -> QImage
 //    return image;
 }
 
-auto CamPlayer::GetImage(VideoData* videodata, int fix, int center_x, int center_y, int r) -> QImage
+auto CamPlayer::GetImage(VideoData* videodata,
+                         int fix,
+                         int center_x,
+                         int center_y,
+                         int r) -> QImage
 {
     //auto videodata = GetVideoData(videoix);
     if(!videodata) return{};
@@ -581,7 +611,10 @@ auto CamPlayer::GetImage(VideoData* videodata, int fix, int center_x, int center
     return image;
 }
 
-auto CamPlayer::Filter(const QImage &image, int fcsix, CamPlayer::FilterMode mode, int *counter) -> QImage
+auto CamPlayer::Filter(const QImage &image,
+                       int fcsix,
+                       CamPlayer::FilterMode mode,
+                       int *counter) -> QImage
 {
     if(counter==nullptr) return {};
     *counter = 0;
@@ -618,19 +651,24 @@ auto CamPlayer::Filter(const QImage &image, int fcsix, CamPlayer::FilterMode mod
     return img;
 }
 
-auto CamPlayer::FilterStat(const QImage & img) -> CamPlayer::FilterStatR
+auto CamPlayer::FilterStat(const QImage & img,
+                           const FilterStatR& i) -> CamPlayer::FilterStatR
 {
     FilterStatR r(img.size());
-    r.pix_count=0;
+    //r.pix_count=0;
     const QRgb *st = reinterpret_cast<const QRgb *>(img.bits()); // NOLINT
     const QRgb *pixel = st;
-    r.p.resize(r.fix.length());
-    for(auto& i:r.p) i=0;
+    //r.p.resize(r.fix.length());
+    //for(auto& i:r.p) i=0;
+    int pix;
     quint64 pixelCount = r.fix.pixelcount();
     for (quint64 p = 0; p < pixelCount; p++) {
-        if (*pixel) {
-            r.pix_count++;
-            r.p[r.fix.ix(p)]++;
+        pix = r.fix.ix(p);
+        if(!i.p[pix]) {
+            if (*pixel) {
+                r.pix_count++;
+                r.p[pix]++;
+            }
         }
         pixel++; // NOLINT
     }
@@ -649,7 +687,8 @@ auto CamPlayer::FilterStat(const QImage & img) -> CamPlayer::FilterStatR
 //ix = (((p*w2)/w)+p%w)/r.w;
 
 */
-void CamPlayer::DrawFilterStat(QImage* img, const FilterStatR& r)
+void CamPlayer::DrawFilterStat(QImage* img,
+                               const FilterStatR& r)
 {
     if(!img) return;
     QRgb *st = reinterpret_cast<QRgb *>(img->bits()); // NOLINT
@@ -662,11 +701,14 @@ void CamPlayer::DrawFilterStat(QImage* img, const FilterStatR& r)
     }
 }
 
-void CamPlayer::DrawFilterStat2(QImage* img, const FilterStatR& r)
+void CamPlayer::DrawFilterStat2(QImage* img,
+                                const FilterStatR& r,
+                                const QColor& c,
+                                bool isEnabled)
 {
     if(!img) return;
     QPainter painter(img);
-    QBrush br(Qt::cyan);
+    QBrush br(c);
     QPen pen(br, 1);
     painter.setPen(pen);
 
@@ -674,7 +716,18 @@ void CamPlayer::DrawFilterStat2(QImage* img, const FilterStatR& r)
     for(int y=0;y<r.fix.h2;y++){
         for(int x=0;x<r.fix.w2;x++){
             if (r.get(x,y)>0) {
-                painter.drawRect(x*w,y*w,w-1,w-1);
+                if (isEnabled) {
+                    painter.drawRect(x*w,y*w,w-1,w-1);
+                } else {
+                    int x0 = x*w+1;
+                    int y0 = y*w+1;
+                    int x1 = x0+w-2;
+                    int y1 = y0+w-2;
+
+                    painter.drawLine(x0, y0, x1, y1);
+                    painter.drawLine(x0, y1, x1, y0);
+                }
+
             }
         }
     }
@@ -832,7 +885,9 @@ auto CamPlayer::GetColor(int quality)->QColor
     }
 }
 
-void CamPlayer::DrawMetaData(QPainter& painter, const FrameMetaData&m, QSize size)
+void CamPlayer::DrawMetaData(QPainter& painter,
+                             const FrameMetaData&m,
+                             QSize size)
 {
     static const int r=10;
     static const int tr=15;

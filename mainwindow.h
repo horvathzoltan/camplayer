@@ -33,7 +33,9 @@ private:
     public:
         const CamPlayer::FrameData* framedata = nullptr;
         CamPlayer::FilterMode filterMode = CamPlayer::FilterMode::Copy;
-        int pixel_counter;
+
+        int total_pixel_counter;
+        int filtered_pixel_counter;
 
         QLabel* label()const{return _label;}
         QLabel* label_pix()const{return _label_pix;}
@@ -88,10 +90,12 @@ public:
     void RefreshUnfcs();
     void RefreshZoom();
     void RefreshFrames();
+    void RefreshFrame(int i);
 
-    QPixmap DrawFrame(const CamPlayer::FrameData* framedata,
-                      CamPlayer::FilterMode filterMode,
-                      int* pixel_counter);
+    QPixmap DrawFrame(const CamPlayer::FrameData* framedata
+                      ,CamPlayer::FilterMode filterMode
+                      ,int* total_pixel_counter
+                      ,int* filtered_pixel_counter);
     void setUi_FilterMode(CamPlayer::FilterMode mode);
     void setUi_FilterMode1(CamPlayer::FilterMode mode);
     void setUi_FilterMode2(CamPlayer::FilterMode mode);
@@ -100,6 +104,10 @@ public:
     void setUi_VideoBitmapData(VideoBitmapData& v);
     static void CopyIconMirrored(QAbstractButton *dst, QAbstractButton *src);
     void setUi_ListWidgetFcNames(int n);
+    QLabel* picLabel(int i);
+    static QString NumToString(int i);
+    static void setItemData(QListWidgetItem *item, const CamPlayer::TrackingData::IgnoreData &data);
+    static CamPlayer::TrackingData::IgnoreData itemData(QListWidgetItem *item);
 private slots:
     void on_pushButton_load_clicked();
     void on_pushButton_next_clicked();
@@ -142,6 +150,8 @@ private slots:
 
     void on_pushButton_ffwd_clicked();
 
+    void on_pushButton_ign_add_clicked();
+
 private:
     int _timer_step=16;
     Ui::MainWindow *ui;
@@ -158,12 +168,21 @@ private:
     //bool _isRestartOnNextTimeout;
     bool _direction = true;
 
-    bool _hasNext;
-    bool _hasPrev;
+    bool _hasNext=false;
+    bool _hasPrev=false;
 
     //void setUi_ShowFrame(const CamPlayer::FrameData* framedata, CamPlayer::FilterMode filterMode, QLabel *label);
     void setUi_FilterMode2(CamPlayer::FilterMode mode, QRadioButton *c, QRadioButton *f, QRadioButton *a);
 
     void setFilterMode(VideoBitmapData *frame, CamPlayer::FilterMode mode);
+
+
+    struct IgnoreListKeys{
+        static const int ix = Qt::UserRole;
+        static const int vix = Qt::UserRole+1;
+        static const int fcix = Qt::UserRole+2;
+        static const int x = Qt::UserRole+3;
+        static const int y = Qt::UserRole+4;
+    };
 };
 #endif // MAINWINDOW_H
