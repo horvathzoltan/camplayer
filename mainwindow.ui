@@ -1465,7 +1465,7 @@
              <number>3</number>
             </property>
             <item>
-             <widget class="QLabel" name="label_tracking">
+             <widget class="QLabel" name="label_tracking_lab">
               <property name="minimumSize">
                <size>
                 <width>80</width>
@@ -2369,9 +2369,9 @@
  <connections/>
  <buttongroups>
   <buttongroup name="buttonGroup"/>
+  <buttongroup name="buttonGroup_4"/>
   <buttongroup name="buttonGroup_5"/>
   <buttongroup name="buttonGroup_3"/>
   <buttongroup name="buttonGroup_2"/>
-  <buttongroup name="buttonGroup_4"/>
  </buttongroups>
 </ui>

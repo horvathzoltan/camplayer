@@ -273,7 +273,6 @@ auto CamPlayer::SetTrackingFcix(int fcix)->SetTrackingR
 {
     SetTrackingR r{};
 
-
     if(fcix!=-1){
         r.fcix_changed = trackingdata.fcix!=fcix;
         trackingdata.fcix=fcix;
@@ -281,7 +280,8 @@ auto CamPlayer::SetTrackingFcix(int fcix)->SetTrackingR
 
     r.isValid = trackingdata.isValid();
 
-    if(r.fcix_changed) AdjoinFFcs();
+    if(r.fcix_changed) AdjoinFFcs();    
+    r.ffcs_count = trackingdata.ffcs.count();
     return r;
 }
 

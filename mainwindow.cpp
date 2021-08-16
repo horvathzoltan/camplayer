@@ -253,6 +253,7 @@ void MainWindow::on_radioButton_isfriendly_clicked()
 void MainWindow::on_radioButton_allfriendly_clicked()
 {
     CamPlayer::SetTracking(CamPlayer::FilterMode::AllFriendly);
+
     RefreshZoom();
 }
 
@@ -649,7 +650,7 @@ void MainWindow::on_MouseButtonPress(QWidget* w, QMouseEvent * event)
                                                     y);
             QString tracking_txt = CamPlayer::ShowTrackingTxt();
             RefreshZoom();
-            ui->label_tracking->setText(tracking_txt);
+            ui->label_tracking_lab->setText(tracking_txt);
             if(trackingR.fcix_changed) RefreshUnfcs();
             auto r2 = CamPlayer::GotoFrame(-1);
             setUi_ShowFrameR(r2);
@@ -686,7 +687,7 @@ void MainWindow::on_MouseButtonPress(QWidget* w, QMouseEvent * event)
                         QString::number(lab.l, 'f', 0)+' '+
                         QString::number(lab.a, 'f', 0)+' '+
                         QString::number(lab.b, 'f', 0);
-                    ui->label_tracking->setText(labtxt);
+                    ui->label_tracking_lab->setText(labtxt);
 
 
                     QString txt4 = CamPlayer::toHexString(c); //sima hex
@@ -966,8 +967,13 @@ void MainWindow::on_listWidget_col_names_currentRowChanged(int color_ix)
 {
     auto trackingR = CamPlayer::SetTrackingFcix(color_ix);
     QString tracking_txt = CamPlayer::ShowTrackingTxt();
-    ui->label_tracking->setText(tracking_txt);
+    ui->label_tracking_lab->setText(tracking_txt);
     if(trackingR.fcix_changed) RefreshUnfcs();
+
+    auto t = ui->listWidget_col_names->currentItem()->text().split(' ');
+    ui->listWidget_col_names->currentItem()->setText(
+        t[0]+' '+QString::number(trackingR.ffcs_count)
+        );
     RefreshZoom();
     RefreshFrames();
 }

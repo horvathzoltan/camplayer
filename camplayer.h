@@ -298,6 +298,7 @@ public:
     struct SetTrackingR{
         bool fcix_changed;
         bool isValid;
+        int ffcs_count;
     };
 
     static SetTrackingR SetTracking(int vix,
