@@ -25,7 +25,13 @@ private:
         bool isValid=false;
     };
 
-    struct VideoBitmapData{
+    struct VideoData{
+        VideoData(){
+            for(int i=0;i<CamPlayer::_fcs_length;i++) ignoretab[i]=nullptr;
+        }
+        ~VideoData(){
+            for(int i=0;i<CamPlayer::_fcs_length;i++) delete ignoretab[i];
+        };
     private:
         QLabel *_label=nullptr;
         QLabel *_label_pix=nullptr;
@@ -49,8 +55,18 @@ private:
             _label_pix=lpx;
         };
 
+        void initIgnoreTab(QSize s)
+        {
+            for(int i=0;i<CamPlayer::_fcs_length;i++)
+                ignoretab[i] = new CamPlayer::FilterStatR(s);
+        }
+        CamPlayer::FilterStatR* ignoretab[CamPlayer::_fcs_length];
     };
 
+    //CamPlayer::FilterStatR _ignoretab_1[CamPlayer::_fcs_length];
+    //CamPlayer::FilterStatR _ignoretab_2[CamPlayer::_fcs_length];
+    //CamPlayer::FilterStatR _ignoretab_3[CamPlayer::_fcs_length];
+    //CamPlayer::FilterStatR _ignoretab_4[CamPlayer::_fcs_length];
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
@@ -92,22 +108,24 @@ public:
     void RefreshFrames();
     void RefreshFrame(int i);
 
-    QPixmap DrawFrame(const CamPlayer::FrameData* framedata
-                      ,CamPlayer::FilterMode filterMode
-                      ,int* total_pixel_counter
-                      ,int* filtered_pixel_counter);
+    QPixmap DrawFrame(VideoData* v);
+//        const CamPlayer::FrameData* framedata
+//                      ,CamPlayer::FilterMode filterMode
+//                      ,int* total_pixel_counter
+//                      ,int* filtered_pixel_counter);
     void setUi_FilterMode(CamPlayer::FilterMode mode);
     void setUi_FilterMode1(CamPlayer::FilterMode mode);
     void setUi_FilterMode2(CamPlayer::FilterMode mode);
     void setUi_FilterMode3(CamPlayer::FilterMode mode);
     void setUi_FilterMode4(CamPlayer::FilterMode mode);
-    void setUi_VideoBitmapData(VideoBitmapData& v);
+    void setUi_VideoBitmapData(VideoData* v);
     static void CopyIconMirrored(QAbstractButton *dst, QAbstractButton *src);
     void setUi_ListWidgetFcNames(int n);
     QLabel* picLabel(int i);
     static QString NumToString(int i);
     static void setItemData(QListWidgetItem *item, const CamPlayer::TrackingData::IgnoreData &data);
     static CamPlayer::TrackingData::IgnoreData itemData(QListWidgetItem *item);
+    MainWindow::VideoData *videoData(int i);
 private slots:
     void on_pushButton_load_clicked();
     void on_pushButton_next_clicked();
@@ -152,6 +170,12 @@ private slots:
 
     void on_pushButton_ign_add_clicked();
 
+    void on_pushButton_ign_del_clicked();
+
+    void on_pushButton_save_ignore_clicked();
+
+    void on_pushButton_load_ignore_clicked();
+
 private:
     int _timer_step=16;
     Ui::MainWindow *ui;
@@ -160,10 +184,10 @@ private:
     ZoomBitmapData _original_zoom;
     ZoomBitmapData _original_filtered;
 
-    VideoBitmapData _frame_1;
-    VideoBitmapData _frame_2;
-    VideoBitmapData _frame_3;
-    VideoBitmapData _frame_4;
+    VideoData _videodata_1;
+    VideoData _videodata_2;
+    VideoData _videodata_3;
+    VideoData _videodata_4;
 
     //bool _isRestartOnNextTimeout;
     bool _direction = true;
@@ -172,9 +196,12 @@ private:
     bool _hasPrev=false;
 
     //void setUi_ShowFrame(const CamPlayer::FrameData* framedata, CamPlayer::FilterMode filterMode, QLabel *label);
-    void setUi_FilterMode2(CamPlayer::FilterMode mode, QRadioButton *c, QRadioButton *f, QRadioButton *a);
+    void setUi_FilterMode2(CamPlayer::FilterMode mode,
+                           QRadioButton *c,
+                           QRadioButton *f,
+                           QRadioButton *a);
 
-    void setFilterMode(VideoBitmapData *frame, CamPlayer::FilterMode mode);
+    void setFilterMode(VideoData *frame, CamPlayer::FilterMode mode);
 
 
     struct IgnoreListKeys{

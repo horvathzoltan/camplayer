@@ -50,6 +50,45 @@ auto CamPlayer::Load(QWidget *parent) -> CamPlayer::LoadR
     return {videoFolder, false};
 }
 
+void CamPlayer::SaveToVideoFolder(const QString& fn, const QStringList& lines)
+{
+    QString path = settings.lastOpenedFolder;
+
+    auto d = QDir(path);
+    if(!d.exists()) return;
+    QString fullpath = d.filePath(fn);
+
+    FileHelper::SaveText(fullpath, lines);
+}
+
+auto  CamPlayer::LoadFromVideoFolder(const QString& fn) -> QMap<int,QStringList>
+{
+    QString path = settings.lastOpenedFolder;
+
+    QDir d(path);
+    //{"*.txt"}
+    auto filenames = d.entryList({fn}, QDir::Files, QDir::Name);
+    QRegularExpression re(QStringLiteral("(\\d+)"));
+    bool isok;
+    QMap<int, QStringList> map;
+    for(auto&filename:filenames)
+    {
+        QString fullpath = d.filePath(filename);
+        if(!QFileInfo(fullpath).exists()) continue;
+
+        auto m = re.match(filename);
+        if(!m.hasMatch()) continue;
+
+        QString a = m.captured();
+        int frameix = a.toInt(&isok);
+        if(!isok) continue;
+
+        auto lll = FileHelper::LoadText(fullpath);
+        map.insert(frameix, lll);
+    }
+    return map;
+}
+
 auto CamPlayer::LoadFcs(QWidget *parent) -> LoadFcsR{
     fcsFolder = QFileDialog::getExistingDirectory(
             parent,
@@ -124,7 +163,7 @@ auto CamPlayer::LoadUnfcs2(const QString& folder, int ix)->bool{
     QStringList lines;
     for(auto& fff:files){
         QString fullpath = d.filePath(fff);
-        if(!QFileInfo(fullpath).exists()) continue;;
+        if(!QFileInfo(fullpath).exists()) continue;
         auto lll = FileHelper::LoadText(fullpath);
         lines.append(lll);
     }
@@ -651,10 +690,11 @@ auto CamPlayer::Filter(const QImage &image,
     return img;
 }
 
-auto CamPlayer::FilterStat(const QImage & img,
-                           const FilterStatR& i) -> CamPlayer::FilterStatR
+auto CamPlayer::FilterStat(const QImage& img,
+                           FilterStatR* i) -> CamPlayer::FilterStatR
 {
     FilterStatR r(img.size());
+    //if(!i) return r;
     //r.pix_count=0;
     const QRgb *st = reinterpret_cast<const QRgb *>(img.bits()); // NOLINT
     const QRgb *pixel = st;
@@ -664,11 +704,9 @@ auto CamPlayer::FilterStat(const QImage & img,
     quint64 pixelCount = r.fix.pixelcount();
     for (quint64 p = 0; p < pixelCount; p++) {
         pix = r.fix.ix(p);
-        if(!i.p[pix]) {
-            if (*pixel) {
-                r.pix_count++;
-                r.p[pix]++;
-            }
+        if(((i && !i->p[pix])||!i) && *pixel) {
+            r.pix_count++;
+            r.p[pix]++;
         }
         pixel++; // NOLINT
     }
@@ -702,20 +740,21 @@ void CamPlayer::DrawFilterStat(QImage* img,
 }
 
 void CamPlayer::DrawFilterStat2(QImage* img,
-                                const FilterStatR& r,
+                                FilterStatR* r,
                                 const QColor& c,
                                 bool isEnabled)
 {
+    if(!r) return;
     if(!img) return;
     QPainter painter(img);
     QBrush br(c);
     QPen pen(br, 1);
     painter.setPen(pen);
 
-    int w = r.fix.rw;
-    for(int y=0;y<r.fix.h2;y++){
-        for(int x=0;x<r.fix.w2;x++){
-            if (r.get(x,y)>0) {
+    int w = r->fix.rw;
+    for(int y=0;y<r->fix.h2;y++){
+        for(int x=0;x<r->fix.w2;x++){
+            if (r->get(x,y)>0) {
                 if (isEnabled) {
                     painter.drawRect(x*w,y*w,w-1,w-1);
                 } else {

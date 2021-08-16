@@ -34,16 +34,16 @@ MainWindow::MainWindow(QWidget *parent)
     QObject::connect(&mouse_move_signaler, &MouseMoveSignaler::mouseMoveEvent,
                      this, &MainWindow::on_move_signaler);
 
-    _frame_1.init(ui->label_pic1, ui->label_pix_1, ui->radioButton_t1_1);
-    _frame_2.init(ui->label_pic2, ui->label_pix_2, ui->radioButton_t1_2);
-    _frame_3.init(ui->label_pic3, ui->label_pix_3, ui->radioButton_t1_3);
-    _frame_4.init(ui->label_pic4, ui->label_pix_4, ui->radioButton_t1_4);
+    _videodata_1.init(ui->label_pic1, ui->label_pix_1, ui->radioButton_t1_1);
+    _videodata_2.init(ui->label_pic2, ui->label_pix_2, ui->radioButton_t1_2);
+    _videodata_3.init(ui->label_pic3, ui->label_pix_3, ui->radioButton_t1_3);
+    _videodata_4.init(ui->label_pic4, ui->label_pix_4, ui->radioButton_t1_4);
 
     setUi_FilterMode(CamPlayer::GetTrackingFilterMode());
-    setUi_FilterMode1(_frame_1.filterMode);
-    setUi_FilterMode2(_frame_2.filterMode);
-    setUi_FilterMode3(_frame_3.filterMode);
-    setUi_FilterMode4(_frame_4.filterMode);
+    setUi_FilterMode1(_videodata_1.filterMode);
+    setUi_FilterMode2(_videodata_2.filterMode);
+    setUi_FilterMode3(_videodata_3.filterMode);
+    setUi_FilterMode4(_videodata_4.filterMode);
 
     ui->pushButton_dir->setChecked(_direction);
     RefreshDirLabel();
@@ -167,6 +167,7 @@ void MainWindow::on_timeout(){
 
 MainWindow::~MainWindow()
 {
+//    delete VideoData
     delete ui;
 }
 
@@ -422,63 +423,70 @@ void MainWindow::setUi_GetTrackingFcsExtraR(
     ui->listWidget_fcs_extra->insertItems(0, m.unfcshex);
 }
 
-auto MainWindow::DrawFrame(const CamPlayer::FrameData* framedata
+auto MainWindow::DrawFrame(VideoData *v)/*const CamPlayer::FrameData* framedata
                            ,CamPlayer::FilterMode filterMode
                            ,int* total_pixel_counter
-                           ,int* filtered_pixel_counter) -> QPixmap
+                           ,int* filtered_pixel_counter)*/ -> QPixmap
 {
-    if(!framedata) return {};
-    if(framedata->image.isNull()) return {};
+    if(!v->framedata) return {};
+    if(v->framedata->image.isNull()) return {};
     //int pixel_counter=0;
     //framedata->pixel_counter=0;
-    *total_pixel_counter=0;
-    *filtered_pixel_counter=0;
+    v->total_pixel_counter=0;
+    v->filtered_pixel_counter=0;
     QImage filtered_image =
-        (filterMode == CamPlayer::Copy)
-        ?framedata->image.copy()
-        :CamPlayer::Filter(framedata->image
-                          ,CamPlayer::trackingdata.fcix
-                          ,filterMode
-                          ,total_pixel_counter);
+        (v->filterMode == CamPlayer::Copy)
+        ?v->framedata->image.copy()
+        :CamPlayer::Filter(v->framedata->image,
+                            CamPlayer::trackingdata.fcix,
+                            v->filterMode,
+                            &v->total_pixel_counter);
 
     if(filtered_image.isNull()) return{};
 
-    if (filterMode!=CamPlayer::Copy) {
-        CamPlayer::FilterStatR ignoretab(filtered_image.size());
-        for(int i = 0; i < ui->listWidget->count(); ++i)
-        {
-            //auto item = ui->listWidget->item(i);
-            auto d = itemData(ui->listWidget->item(i));
+    if (v->filterMode!=CamPlayer::Copy) {
+        //CamPlayer::FilterStatR ignoretab =
+//        if(v->ignoretab[CamPlayer::trackingdata.fcix]==nullptr){
+//            v->ignoretab[CamPlayer::trackingdata.fcix] =
+//                new CamPlayer::FilterStatR(filtered_image.size());
+//            for(int i = 0; i < ui->listWidget->count(); ++i)
+//            {
+//                auto d = itemData(ui->listWidget->item(i));
 
-            if(d.vix==framedata->videoix &&
-                d.fcix==CamPlayer::trackingdata.fcix)
-                ignoretab.p[d.ix]=1;
-        }
-        CamPlayer::DrawFilterStat2(&filtered_image,
-                                   ignoretab,
-                                   Qt::red,
-                                   false);
-
-        CamPlayer::FilterStatR filterstat = CamPlayer::FilterStat(
-            filtered_image,
-            ignoretab);
-
-        if(filterstat.pix_count>0)
-        {
+//                if(d.vix==v->framedata->videoix &&
+//                    d.fcix==CamPlayer::trackingdata.fcix) {
+//                    v->ignoretab[CamPlayer::trackingdata.fcix]->p[d.ix]=1;
+//                }
+//            }
+//        }
+        //CamPlayer::FilterStatR ignoretab(filtered_image.size());
+        //if(v->ignoretab[CamPlayer::trackingdata.fcix]){
             CamPlayer::DrawFilterStat2(&filtered_image,
-                                       filterstat,
-                                       Qt::cyan,
-                                       true);
+                                       v->ignoretab[CamPlayer::trackingdata.fcix],
+                                       Qt::red,
+                                       false);
+
+            CamPlayer::FilterStatR filterstat = CamPlayer::FilterStat(
+                filtered_image,
+                v->ignoretab[CamPlayer::trackingdata.fcix]);
+
+            if(filterstat.pix_count>0)
+            {
+                CamPlayer::DrawFilterStat2(&filtered_image,
+                                           &filterstat,
+                                           Qt::cyan,
+                                           true);
+            //}
+            v->filtered_pixel_counter=filterstat.pix_count;
         }
-        *filtered_pixel_counter=filterstat.pix_count;
     }
 
     auto p = QPixmap::fromImage(filtered_image);
     QPainter painter(&p);
 
     CamPlayer::DrawMetaData(painter,
-                            framedata->metadata,
-                            framedata->image.size());
+                            v->framedata->metadata,
+                            v->framedata->image.size());
     painter.end();
     return p;
 }
@@ -490,10 +498,10 @@ void MainWindow::setUi_ShowFrameR(const CamPlayer::ShowFrameR& m)
     _hasNext = m.hasNext;
     _hasPrev = m.hasPrev;
 
-    _frame_1.framedata = m.framedata1;
-    _frame_2.framedata = m.framedata2;
-    _frame_3.framedata = m.framedata3;
-    _frame_4.framedata = m.framedata4;
+    _videodata_1.framedata = m.framedata1;
+    _videodata_2.framedata = m.framedata2;
+    _videodata_3.framedata = m.framedata3;
+    _videodata_4.framedata = m.framedata4;
 
     RefreshFrames();
     RefreshZoom();
@@ -506,48 +514,59 @@ auto MainWindow::NumToString(int i) -> QString
     return QString::number(i);
 };
 
-void MainWindow::setUi_VideoBitmapData(VideoBitmapData& v)
+void MainWindow::setUi_VideoBitmapData(VideoData* v)
 {
-    if (!v.framedata) return;
+    if (!v->framedata) return;
 
-    if (v.framedata->image.isNull()) {
-        v.label()->setText(QStringLiteral("No image in frame"));
-        v.label_pix()->clear();
+    if (v->framedata->image.isNull()) {
+        v->label()->setText(QStringLiteral("No image in frame"));
+        v->label_pix()->clear();
         return;
     }
-    v.total_pixel_counter=0;
-    v.filtered_pixel_counter=0;
-    auto pixmap = DrawFrame(v.framedata
+    v->total_pixel_counter=0;
+    v->filtered_pixel_counter=0;
+    auto pixmap = DrawFrame(v);/*v.framedata
                             , v.filterMode
                             , &v.total_pixel_counter
-                            , &v.filtered_pixel_counter);
-    setUi_picLabel(pixmap, v.label());
+                            , &v.filtered_pixel_counter);*/
+    setUi_picLabel(pixmap, v->label());
 
-    v.label_pix()->setText( NumToString(v.total_pixel_counter)
+    v->label_pix()->setText( NumToString(v->total_pixel_counter)
                            +'/'
-                           +NumToString(v.filtered_pixel_counter));
+                            +NumToString(v->filtered_pixel_counter));
 
     // ha átment valami a szűőn
     if (_timer.isActive()) {
-        if(v.isT1() && v.filtered_pixel_counter>0){
+        if(v->isT1() && v->filtered_pixel_counter>0){
             on_pushButton_stop_clicked();
         }
     }
 }
 
 void MainWindow::RefreshFrames(){
-    setUi_VideoBitmapData(_frame_1);
-    setUi_VideoBitmapData(_frame_2);
-    setUi_VideoBitmapData(_frame_3);
-    setUi_VideoBitmapData(_frame_4);
+    setUi_VideoBitmapData(&_videodata_1);
+    setUi_VideoBitmapData(&_videodata_2);
+    setUi_VideoBitmapData(&_videodata_3);
+    setUi_VideoBitmapData(&_videodata_4);
 }
 
 void MainWindow::RefreshFrame(int i)
 {
-    if (i==1) { setUi_VideoBitmapData(_frame_1); return;}
-    if (i==2) { setUi_VideoBitmapData(_frame_2); return;}
-    if (i==3) { setUi_VideoBitmapData(_frame_3); return;}
-    if (i==4) { setUi_VideoBitmapData(_frame_4); return;}
+//    if (i==1) { setUi_VideoBitmapData(&_videodata_1); return;}
+//    if (i==2) { setUi_VideoBitmapData(&_videodata_2); return;}
+//    if (i==3) { setUi_VideoBitmapData(&_videodata_3); return;}
+//    if (i==4) { setUi_VideoBitmapData(&_videodata_4); return;}
+    auto v = videoData(i);
+    if(!v) return;
+    setUi_VideoBitmapData(v);
+}
+
+MainWindow::VideoData* MainWindow::videoData(int i){
+    if (i==1) return &_videodata_1;
+    if (i==2) return &_videodata_2;
+    if (i==3) return &_videodata_3;
+    if (i==4) return &_videodata_4;
+    return nullptr;
 }
 
 void MainWindow::setUi_LoadFcsR(const CamPlayer::LoadFcsR& m)
@@ -973,80 +992,80 @@ void MainWindow::on_pushButton_2_clicked()
 
 /*filter radiobuttons*/
 
-void MainWindow::setFilterMode(VideoBitmapData *videodata,
+void MainWindow::setFilterMode(VideoData *videodata,
                                CamPlayer::FilterMode mode){
     videodata->filterMode = mode;
-    setUi_VideoBitmapData(*videodata);
+    setUi_VideoBitmapData(videodata);
     //setUi_ShowFrame(frame->framedata, frame->filterMode, frame->label());
 }
 
 void MainWindow::on_radioButton_copy_1_clicked()
 {
-    setFilterMode(&_frame_1, CamPlayer::FilterMode::Copy);
+    setFilterMode(&_videodata_1, CamPlayer::FilterMode::Copy);
 }
 
 void MainWindow::on_radioButton_allfriendly_1_clicked()
 {
-    setFilterMode(&_frame_1, CamPlayer::FilterMode::AllFriendly);
+    setFilterMode(&_videodata_1, CamPlayer::FilterMode::AllFriendly);
 }
 
 void MainWindow::on_radioButton_isfriendly_1_clicked()
 {
-    setFilterMode(&_frame_1, CamPlayer::FilterMode::IsFriendly);
+    setFilterMode(&_videodata_1, CamPlayer::FilterMode::IsFriendly);
 }
 
 
 void MainWindow::on_radioButton_copy_2_clicked()
 {
-    setFilterMode(&_frame_2, CamPlayer::FilterMode::Copy);
+    setFilterMode(&_videodata_2, CamPlayer::FilterMode::Copy);
 }
 
 
 void MainWindow::on_radioButton_allfriendly_2_clicked()
 {
-    setFilterMode(&_frame_2, CamPlayer::FilterMode::AllFriendly);
+    setFilterMode(&_videodata_2, CamPlayer::FilterMode::AllFriendly);
 }
 
 
 void MainWindow::on_radioButton_isfriendly_2_clicked()
 {
-    setFilterMode(&_frame_2, CamPlayer::FilterMode::IsFriendly);
+    setFilterMode(&_videodata_2, CamPlayer::FilterMode::IsFriendly);
 }
 
 
 void MainWindow::on_radioButton_copy_3_clicked()
 {
-    setFilterMode(&_frame_3, CamPlayer::FilterMode::Copy);
+    setFilterMode(&_videodata_3, CamPlayer::FilterMode::Copy);
 }
 
 
 void MainWindow::on_radioButton_allfriendly_3_clicked()
 {
-    setFilterMode(&_frame_3, CamPlayer::FilterMode::AllFriendly);
+    setFilterMode(&_videodata_3, CamPlayer::FilterMode::AllFriendly);
 }
 
 
 void MainWindow::on_radioButton_isfriendly_3_clicked()
 {
-    setFilterMode(&_frame_3, CamPlayer::FilterMode::IsFriendly);
+    setFilterMode(&_videodata_3, CamPlayer::FilterMode::IsFriendly);
 }
 
 
 void MainWindow::on_radioButton_copy_4_clicked()
 {
-    setFilterMode(&_frame_4, CamPlayer::FilterMode::Copy);
+    setFilterMode(&_videodata_4, CamPlayer::FilterMode::Copy);
 }
 
 
 void MainWindow::on_radioButton_allfriendly_4_clicked()
 {
-    setFilterMode(&_frame_4, CamPlayer::FilterMode::AllFriendly);
+    setFilterMode(&_videodata_4, CamPlayer::FilterMode::AllFriendly);
 }
 
 
 void MainWindow::on_radioButton_isfriendly_4_clicked()
 {
-    setFilterMode(&_frame_4, CamPlayer::FilterMode::IsFriendly);
+    setFilterMode(&_videodata_4, CamPlayer::FilterMode::IsFriendly);
 }
 
 
@@ -1062,21 +1081,43 @@ void MainWindow::on_pushButton_ign_add_clicked()
     if(!CamPlayer::trackingdata.isValid()) return;
     if(CamPlayer::trackingdata.fcix==-1) return;
 
-    QLabel* l = picLabel(CamPlayer::trackingdata.vix);
-    auto pixmap = l->pixmap(Qt::ReturnByValue);
+    auto v = videoData(CamPlayer::trackingdata.vix);
+    auto s = v->framedata->image.size();
 
-    CamPlayer::FilterIx fix(pixmap.size(), CamPlayer::FILTER_W);
+    CamPlayer::FilterIx fix(s, CamPlayer::FILTER_W);
 
-    auto itemData = CamPlayer::trackingdata.ignoreData();
-
+    auto itemdata = CamPlayer::trackingdata.ignoreData();
     auto mp = fix.mpoint(CamPlayer::trackingdata.mpoint());
-    itemData.setIx(fix.ix(mp));
+    itemdata.setIx(fix.ix(mp));
 
-    auto itemtxt = itemData.toString();
-    auto item = new QListWidgetItem({}, itemtxt, ui->listWidget);
-    setItemData(item, itemData);
+    auto itemtxt = itemdata.toString();
 
+    if(v) {
+        auto vv = &v->ignoretab[CamPlayer::trackingdata.fcix];//NOLINT
+        if (*vv==nullptr) *vv = new CamPlayer::FilterStatR(s);
+        if (!(*vv)->p[itemdata.ix]) {
+            (*vv)->p[itemdata.ix]=1;
+            auto item = new QListWidgetItem({}, itemtxt, ui->listWidget_ignore);
+            setItemData(item, itemdata);
+            }
+        }
     RefreshFrame(CamPlayer::trackingdata.vix);
+}
+
+void MainWindow::on_pushButton_ign_del_clicked()
+{
+    if(!CamPlayer::trackingdata.isValid()) return;
+    if(CamPlayer::trackingdata.fcix==-1) return;
+
+    auto item = ui->listWidget_ignore->currentItem();
+    if(!item) return;
+    auto itemdata = itemData(item);
+    auto v = videoData(itemdata.vix);
+    if(!v) return;
+    auto vv = &v->ignoretab[itemdata.fcix];//nolint
+    if (*vv!=nullptr) (*vv)->p[itemdata.ix]=0;
+    ui->listWidget_ignore->takeItem(ui->listWidget_ignore->row(item));
+    RefreshFrame(itemdata.vix);
 }
 
 void MainWindow::setItemData(QListWidgetItem* item,
@@ -1084,8 +1125,8 @@ void MainWindow::setItemData(QListWidgetItem* item,
     item->setData(IgnoreListKeys::ix, data.ix);
     item->setData(IgnoreListKeys::fcix, data.fcix);
     item->setData(IgnoreListKeys::vix, data.vix);
-    item->setData(IgnoreListKeys::x, data.x);
-    item->setData(IgnoreListKeys::y, data.y);
+//    item->setData(IgnoreListKeys::x, data.x);
+//    item->setData(IgnoreListKeys::y, data.y);
 }
 
 auto MainWindow::itemData(QListWidgetItem* item) ->
@@ -1094,10 +1135,89 @@ auto MainWindow::itemData(QListWidgetItem* item) ->
     return{
         item->data(IgnoreListKeys::vix).toInt(),
         item->data(IgnoreListKeys::fcix).toInt(),
-        item->data(IgnoreListKeys::x).toInt(),
-        item->data(IgnoreListKeys::y).toInt(),
+//        item->data(IgnoreListKeys::x).toInt(),
+//        item->data(IgnoreListKeys::y).toInt(),
         item->data(IgnoreListKeys::ix).toInt(),
     };
 }
 
+void MainWindow::on_pushButton_save_ignore_clicked()
+{
+
+    for(int vix=1;vix<=4;vix++){
+        auto v = videoData(vix);
+        if(!v) continue;
+        auto s = v->framedata->image.size();
+        QStringList e;
+        e.append(QString::number(vix)+';'
+                 +QString::number(s.width())+';'
+                 +QString::number(s.height()));
+        for(int fcix=0;fcix<CamPlayer::_fcs_length;fcix++){
+            auto vv = &(v->ignoretab[fcix]); //NOLINT
+            if(!(*vv)) continue;
+            CamPlayer::FilterIx fix(s, CamPlayer::FILTER_W);
+            for(int i=0;i<fix.length();i++){
+                if((*vv)->p[i]){
+                    e.append(
+                        QString::number(fcix)+";"
+                        +QString::number(i)
+                        );
+                }
+            }
+        }
+        CamPlayer::SaveToVideoFolder("ignore_"+QString::number(vix)+".txt", e);
+    }
+}
+
+
+void MainWindow::on_pushButton_load_ignore_clicked()
+{
+    auto m = CamPlayer::LoadFromVideoFolder("ignore*.txt");
+
+    for(auto i = m.begin();i!=m.end();i++)
+    {
+        if(i.value().length()>1){
+            int vix = i.key();
+
+            auto v = videoData(vix);
+            auto s = v->framedata->image.size();
+            auto sl = i.value().value(0).split(';');
+
+            bool ok0, ok1, ok2;
+            int svix = sl[0].toInt(&ok0);
+            int sw = sl[1].toInt(&ok1);
+            int sh = sl[2].toInt(&ok2);
+
+            if (!ok0 ||
+                !ok1 ||
+                !ok2 ||
+                svix != vix ||
+                sw!=s.width() ||
+                sh!=s.height()) continue;
+
+            CamPlayer::FilterIx fix(s, CamPlayer::FILTER_W);
+            for(int j=1;j<i.value().length();j++){
+                auto l = i.value().value(j).split(';');
+                if(l.length()<2) continue;
+                bool ok;
+                int fcix = l[0].toInt(&ok);
+                int ix = l[1].toInt(&ok);
+
+                auto vv = &v->ignoretab[fcix];//NOLINT
+                if (*vv==nullptr) *vv = new CamPlayer::FilterStatR(s);
+                (*vv)->p[ix]=1;
+
+                //QPoint p = fix.mpoint(ix);
+                CamPlayer::TrackingData::IgnoreData itemdata {vix,
+                                                             fcix,
+//                                                             p.x(), p.y(),
+                                                             ix};
+                auto itemtxt = itemdata.toString();
+                auto item = new QListWidgetItem({}, itemtxt, ui->listWidget_ignore);
+                setItemData(item, itemdata);
+
+            }
+        }
+    }
+}
 

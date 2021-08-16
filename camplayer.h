@@ -59,19 +59,19 @@ public:
 
 
         struct IgnoreData{
-            int vix, fcix, x, y, ix;
+            int vix, fcix, /*x, y,*/ ix;
 
             QString toString() {
                 return QString::number(vix)+' '
                     + QString::number(fcix)+' '
-                    + QString::number(x)+' '
-                    + QString::number(y)+' '
+//                    + QString::number(x)+' '
+//                    + QString::number(y)+' '
                     + QString::number(ix);
             }
 
             void setIx(int _ix){ ix=_ix;}
         };
-        IgnoreData ignoreData(){return {vix,fcix,x,y,-1};}
+        IgnoreData ignoreData(){return {vix,fcix,/*x,y,*/-1};}
         QPoint mpoint(){return {x,y};}
 
     };
@@ -246,6 +246,7 @@ public:
         int ix(int _x, int _y) const {return _y*w2+_x;}
         int ix(QPoint _p) const {return ix(_p.x(), _p.y());}
         QPoint mpoint(QPoint _p){return {_p.x()/rw, _p.y()/rw};}
+        QPoint mpoint(int _p){return {_p/w2, _p%w2};}
     };
 
     struct FilterStatR{
@@ -254,6 +255,7 @@ public:
             p.resize(fix.length());
             for(auto& i:p) i=0;
         }
+        //bool isinited = false;
         int pix_count;
         int w = FILTER_W;
         FilterIx fix;
@@ -265,7 +267,7 @@ public:
     };
 
     static FilterStatR FilterStat(const QImage&,
-                                  const FilterStatR& ignoretab);
+                                  FilterStatR* ignoretab);
 
     struct LoadFcsR{
         QString folderName;
@@ -372,14 +374,16 @@ public:
     static SetTrackingR SetTrackingFcix(int fcix);
     //static QSize trackingdata_image_size();
     static void DeleteTracking();
-    static void DrawFilterStat(QImage *img, const FilterStatR &r);
+    static void DrawFilterStat(QImage *img, const FilterStatR& r);
     static void DrawFilterStat2(QImage *img,
-                                const FilterStatR &r,
+                                FilterStatR* r,
                                 const QColor& c,
                                 bool isEnabled);
     static int filterIx();
 
 
+    static void SaveToVideoFolder(const QString &fn, const QStringList &lines);
+    static QMap<int,QStringList> LoadFromVideoFolder(const QString &fn);
 };
 
 #endif // CAMPLAYER_H
