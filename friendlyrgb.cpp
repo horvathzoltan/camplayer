@@ -169,7 +169,7 @@ auto FriendlyRGB::GetRYBIxWheelN(byte r, byte g, byte b, double* d_min, int n) -
 
         for(int i=0;i<n;i++)
         {
-            double d1 = a0-alphas[i];
+            double d1 = a0-alphas[i]; //molint
             auto d2 = GeoMath::uSzogNormalize(d1);
             auto d = abs(d2);
 

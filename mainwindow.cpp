@@ -965,6 +965,8 @@ void MainWindow::on_listWidget_unfcs_itemClicked(QListWidgetItem *item)
 
 void MainWindow::on_listWidget_col_names_currentRowChanged(int color_ix)
 {
+    if(color_ix==-1) return;
+    if(color_ix>=CamPlayer::_fcs_length) return;
     auto trackingR = CamPlayer::SetTrackingFcix(color_ix);
     QString tracking_txt = CamPlayer::ShowTrackingTxt();
     ui->label_tracking_lab->setText(tracking_txt);
