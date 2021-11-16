@@ -34,8 +34,9 @@ private:
         };
     private:
         QLabel *_label=nullptr;
-        QLabel *_label_pix=nullptr;
+        QLabel *_label_pix=nullptr;        
         QRadioButton *_t1 = nullptr;
+        QLabel *_label_time=nullptr;
     public:
         const CamPlayer::FrameData* framedata = nullptr;
         CamPlayer::FilterMode filterMode = CamPlayer::FilterMode::Copy;
@@ -45,14 +46,18 @@ private:
 
         QLabel* label()const{return _label;}
         QLabel* label_pix()const{return _label_pix;}
+        QLabel* label_time()const{return _label_time;}
+
+        int pre_time=0;
         bool isT1() const {
             if(!_t1) return false;
             return _t1->isChecked();
         }
-        void init(QLabel*l, QLabel* lpx, QRadioButton*r){
+        void init(QLabel*l, QLabel* lpx, QRadioButton*r, QLabel* lt){
             _label=l;
             _t1=r;
             _label_pix=lpx;
+            _label_time = lt;
         };
 
         void initIgnoreTab(QSize s)
@@ -61,6 +66,15 @@ private:
                 ignoretab[i] = new CamPlayer::FilterStatR(s);
         }
         CamPlayer::FilterStatR* ignoretab[CamPlayer::_fcs_length];
+
+        void CalcPreTime(const CamPlayer::FrameData* m){
+            if(!framedata || !m){ pre_time=0; return; }
+            if(framedata->metadata.timestamp.isNull()){ pre_time=0; return; }
+
+                pre_time = m->metadata.timestamp.toMSecsSinceEpoch()
+                    - framedata->metadata.timestamp.toMSecsSinceEpoch();
+
+        }
     };
 
     //CamPlayer::FilterStatR _ignoretab_1[CamPlayer::_fcs_length];

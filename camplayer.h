@@ -126,8 +126,8 @@ public:
     struct FrameMetaData{        
         QString txt;
         int frameix;
-        QDateTime timestamp;
-        int balls;
+        QDateTime timestamp = QDateTime();
+        int balls=0;
         QMap<int,BallData> balldata;
         int videoix;
     };

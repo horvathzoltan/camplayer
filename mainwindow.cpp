@@ -34,10 +34,22 @@ MainWindow::MainWindow(QWidget *parent)
     QObject::connect(&mouse_move_signaler, &MouseMoveSignaler::mouseMoveEvent,
                      this, &MainWindow::on_move_signaler);
 
-    _videodata_1.init(ui->label_pic1, ui->label_pix_1, ui->radioButton_t1_1);
-    _videodata_2.init(ui->label_pic2, ui->label_pix_2, ui->radioButton_t1_2);
-    _videodata_3.init(ui->label_pic3, ui->label_pix_3, ui->radioButton_t1_3);
-    _videodata_4.init(ui->label_pic4, ui->label_pix_4, ui->radioButton_t1_4);
+    _videodata_1.init(ui->label_pic1,
+                      ui->label_pix_1,
+                      ui->radioButton_t1_1,
+                      ui->label_1_time);
+    _videodata_2.init(ui->label_pic2,
+                      ui->label_pix_2,
+                      ui->radioButton_t1_2,
+                      ui->label_2_time);
+    _videodata_3.init(ui->label_pic3,
+                      ui->label_pix_3,
+                      ui->radioButton_t1_3,
+                      ui->label_3_time);
+    _videodata_4.init(ui->label_pic4,
+                      ui->label_pix_4,
+                      ui->radioButton_t1_4,
+                      ui->label_4_time);
 
     setUi_FilterMode(CamPlayer::GetTrackingFilterMode());
     setUi_FilterMode1(_videodata_1.filterMode);
@@ -338,6 +350,12 @@ void MainWindow::setUi_SettingsR(const CamPlayer::SettingsR& m)
 void MainWindow::setUi_LoadR(const CamPlayer::LoadR& m)
 {
     if(m.isCanceled) return;
+
+    _videodata_1.framedata=nullptr;
+    _videodata_2.framedata=nullptr;
+    _videodata_3.framedata=nullptr;
+    _videodata_4.framedata=nullptr;
+
     ui->label_examId->setText(m.folderName);
 }
 
@@ -499,6 +517,12 @@ void MainWindow::setUi_ShowFrameR(const CamPlayer::ShowFrameR& m)
     _hasNext = m.hasNext;
     _hasPrev = m.hasPrev;
 
+
+    _videodata_1.CalcPreTime(m.framedata1);
+    _videodata_2.CalcPreTime(m.framedata2);
+    _videodata_3.CalcPreTime(m.framedata3);
+    _videodata_4.CalcPreTime(m.framedata4);
+
     _videodata_1.framedata = m.framedata1;
     _videodata_2.framedata = m.framedata2;
     _videodata_3.framedata = m.framedata3;
@@ -542,6 +566,9 @@ void MainWindow::setUi_VideoBitmapData(VideoData* v)
             on_pushButton_stop_clicked();
         }
     }
+    //auto a = v->framedata->metadata.timestamp-v->pre_time;
+    //QString tx = a.;
+    v->label_time()->setText(QString::number(v->pre_time));
 }
 
 void MainWindow::RefreshFrames(){
@@ -553,10 +580,6 @@ void MainWindow::RefreshFrames(){
 
 void MainWindow::RefreshFrame(int i)
 {
-//    if (i==1) { setUi_VideoBitmapData(&_videodata_1); return;}
-//    if (i==2) { setUi_VideoBitmapData(&_videodata_2); return;}
-//    if (i==3) { setUi_VideoBitmapData(&_videodata_3); return;}
-//    if (i==4) { setUi_VideoBitmapData(&_videodata_4); return;}
     auto v = videoData(i);
     if(!v) return;
     setUi_VideoBitmapData(v);

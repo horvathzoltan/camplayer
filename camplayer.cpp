@@ -817,10 +817,13 @@ auto CamPlayer::GetColorIx(const QColor &color) ->int
 
 auto CamPlayer::ShowFrame(int ix)->  CamPlayer::ShowFrameR
 {
-    bool hasNext = ix < video1.maxframeix
-        && ix < video2.maxframeix
-        && ix < video3.maxframeix
-        && ix < video4.maxframeix;
+    int maxix = 0;
+    if(video1.maxframeix>maxix) maxix = video1.maxframeix;
+    if(video2.maxframeix>maxix) maxix = video2.maxframeix;
+    if(video3.maxframeix>maxix) maxix = video3.maxframeix;
+    if(video4.maxframeix>maxix) maxix = video4.maxframeix;
+
+    bool hasNext = ix<maxix;
     bool hasPrev = ix>0;
     return{
         GetFrameData(&video1,ix),
@@ -840,9 +843,13 @@ auto CamPlayer::GetMetaData(const QImage& image) -> QString
 }
 
 auto CamPlayer::ParseMeta(const QString& txt) -> CamPlayer::FrameMetaData
-{
-    if(txt.isEmpty()) return {};
+{    
     FrameMetaData r;
+    r.timestamp = QDateTime();
+    r.balls=0;
+    r.txt = QString();
+    if(txt.isEmpty()) return r;
+
     r.txt = txt;
 
     bool isok;
@@ -855,7 +862,7 @@ auto CamPlayer::ParseMeta(const QString& txt) -> CamPlayer::FrameMetaData
     if(str1s.length()<3) return r;
     r.frameix = str1s[0].toInt(&isok);
     if(!isok) return r;
-    r.timestamp =  QDateTime::fromString(str1s[1]);
+    r.timestamp =  QDateTime::fromString(str1s[1], Qt::ISODateWithMs);
     r.balls = str1s[2].toInt(&isok);
     if(!isok) return r;
     auto str2s = str2.split('|');
@@ -865,7 +872,7 @@ auto CamPlayer::ParseMeta(const QString& txt) -> CamPlayer::FrameMetaData
         b.txt = s2;
         auto s2s = s2.split(';');
 
-        if(s2.length()<16) continue;
+        if(s2s.length()<16) continue;
         b.id = s2s[0].toInt(&isok);
         //if(!isok) continue;
         b.is_valid_for_tracking = s2s[1]==QStringLiteral("true");
@@ -899,12 +906,12 @@ auto CamPlayer::ParseMeta(const QString& txt) -> CamPlayer::FrameMetaData
         b.found_last_ok = s2s[15].toInt(&isok);
         //if(!isok) continue;
 
-        if(s2.length()>18){
-            b.x = s2s[16].toDouble(&isok);
+        if(s2s.length()>20){
+            b.x = s2s[18].toDouble(&isok);
             //if(!isok) continue;
-            b.y = s2s[17].toDouble(&isok);
+            b.y = s2s[19].toDouble(&isok);
             //if(!isok) continue;
-            b.quality = s2s[18].toInt(&isok);
+            b.quality = s2s[20].toInt(&isok);
             //if(!isok) continue;
         }
 
@@ -960,7 +967,7 @@ void CamPlayer::DrawMetaData(QPainter& painter,
 
         painter.drawLine(x+r, y, x+r2, y);
         QString txt = QString::number(b.id);
-        if(!b.shortname.isEmpty()) txt+=':'+b.shortname;
+        //if(!b.shortname.isEmpty()) txt+=':'+b.shortname;
 
         QRect rect2(x+r2+4, y-tr, tr2, tr2);
 
@@ -1013,7 +1020,7 @@ void CamPlayer::DrawMetaData(QPainter& painter,
         painter.drawLine(x-tr, y, x+tr, y);
     }
 
-    painter.end();
+    //painter.end();
 }
 
 
